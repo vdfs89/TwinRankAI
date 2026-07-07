@@ -1,0 +1,54 @@
+services:
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.14.0
+    command:
+      - mlflow
+      - server
+      - --backend-store-uri
+      - /mlflow/mlruns
+      - --default-artifact-root
+      - /mlflow/artifacts
+      - --host
+      - 0.0.0.0
+      - --port
+      - "5000"
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./mlruns:/mlflow/mlruns
+      - ./mlartifacts:/mlflow/artifacts
+
+  app:
+    build: .
+    depends_on:
+      - mlflow
+    environment:
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./reports:/app/reports
+    command:
+      - uvicorn
+      - reco.serving.api:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+
+  train:
+    build: .
+    depends_on:
+      - mlflow
+    environment:
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./reports:/app/reports
+    command:
+      - python
+      - -m
+      - reco.training.train

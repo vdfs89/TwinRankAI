@@ -1,0 +1,15 @@
+target-version = "py311"
+line-length = 100
+src = ["src", "tests", "scripts"]
+
+[lint]
+select = ["E", "F", "I", "N", "UP", "B", "SIM", "ANN", "D"]
+ignore = ["ANN101", "D203", "D213"]
+
+[lint.per-file-ignores]
+"tests/*" = ["ANN", "D"]
+"notebooks/*" = ["ALL"]
+
+[format]
+quote-style = "double"
+indent-style = "space"

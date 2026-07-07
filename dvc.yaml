@@ -1,0 +1,54 @@
+stages:
+  preprocess:
+    cmd: python -m reco.pipelines.preprocess
+    deps:
+      - src/reco/pipelines/preprocess.py
+      - src/reco/data/preprocessing.py
+      - src/reco/data/schema.py
+      - src/reco/settings.py
+      - data/raw/events.csv
+    outs:
+      - data/processed/events_processed.csv
+      - data/processed/train_events.csv
+      - data/processed/test_events.csv
+
+  feature_eng:
+    cmd: python -m reco.pipelines.feature_eng
+    deps:
+      - src/reco/pipelines/feature_eng.py
+      - src/reco/settings.py
+      - data/processed/train_events.csv
+      - data/processed/test_events.csv
+    outs:
+      - data/processed/train_features.csv
+      - data/processed/test_features.csv
+      - data/processed/visitor_mapping.json
+      - data/processed/item_mapping.json
+
+  train:
+    cmd: python -m reco.training.train
+    deps:
+      - src/reco/training/train.py
+      - src/reco/training/evaluate.py
+      - src/reco/training/mlflow_utils.py
+      - src/reco/models/base.py
+      - src/reco/models/baseline.py
+      - src/reco/models/factory.py
+      - src/reco/models/two_tower.py
+      - src/reco/settings.py
+      - data/processed/train_features.csv
+      - data/processed/test_features.csv
+    outs:
+      - models/two_tower/model.joblib
+
+  evaluate:
+    cmd: python -m reco.pipelines.evaluate
+    deps:
+      - src/reco/pipelines/evaluate.py
+      - src/reco/training/evaluate.py
+      - src/reco/models/factory.py
+      - src/reco/settings.py
+      - data/processed/test_features.csv
+      - models/two_tower/model.joblib
+    metrics:
+      - reports/metrics.json
