@@ -12,6 +12,23 @@
 > **Learning Intent. Ranking Experiences.**
 >
 > Every interaction tells a story. TwinRank AI learns it.
+>
+> ## 📊 Impact at a Glance
+
+| Metric | Value | Context |
+|---|---|---|
+| **Architecture** | **Two-Tower Neural Network** | Shared embedding space for users and items |
+| **Ranking metrics** | **Recall@K, NDCG@K, MAP@K, MRR@K** | Ranking-oriented evaluation (not classification accuracy) |
+| **Signal type** | **Implicit behavioral** | Clicks, views, cart events, purchases — no explicit ratings |
+| **ML stack** | **PyTorch + MLflow + DVC** | Reproducible pipelines, experiment tracking, versioning |
+| **Serving** | **FastAPI REST API** | `uvicorn reco.serving.api:app` |
+| **Pipeline** | **`dvc repro`** | Full reproducible pipeline in one command |
+| **Negative sampling** | **✅ Implemented** | In-batch + hard negatives for better representation learning |
+
+> **Why Two-Tower?** Popularity-based recommenders push the same items to everyone. Two-Tower learns *user intent* from behavioral patterns, mapping users and items into a shared semantic space — enabling personalization at scale without explicit ratings.
+
+---
+
 
 TwinRank AI is a production-oriented recommendation engine for e-commerce. It learns user intent from implicit signals such as clicks, views, cart events, and purchases, then maps users and items into a shared embedding space with a Two-Tower model.
 
