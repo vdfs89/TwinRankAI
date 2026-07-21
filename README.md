@@ -42,7 +42,7 @@ Imagine uma loja com milhões de produtos. Algumas visualizações, um item adic
 
 Mais do que um modelo, o TwinRank AI é um blueprint compacto de plataforma de recomendação: código limpo, pipelines reproduzíveis, rastreamento de experimentos e gestão de ciclo de vida próximos do que sistemas de ML em produção exigem.
 
-✨ **NOVO: Live Demo (SaaS)** - [Leia o Manual de Uso da Demo Plugável](docs/manual_demo_plugavel.md) para testar o poder da nossa arquitetura Two-Tower treinando um modelo on-the-fly, diretamente no navegador, fazendo o upload das suas próprias planilhas CSV!
+✨ **NOVO: Live Demo (SaaS)** - Acesse o **[TwinRank AI no Streamlit](https://twinrankai.streamlit.app/)** para testar o poder da nossa arquitetura Two-Tower treinando um modelo on-the-fly, diretamente no navegador, fazendo o upload das suas próprias planilhas CSV!
 
 ---
 
@@ -186,6 +186,27 @@ Executar o pipeline completo:
 
 ```bash
 dvc repro
+```
+
+---
+
+## Demo Plugável (E-commerce SaaS)
+
+Se você possui um e-commerce ou quer ver o TwinRank operando nos seus próprios dados, construímos uma **Demo Plugável (SaaS)** hospedada na nuvem que treina a rede neural Two-Tower **on-the-fly**.
+
+🌐 **[Acessar o App no Streamlit Cloud](https://twinrankai.streamlit.app/)**
+
+Basta fornecer dois arquivos CSV (ou usar os dados de exemplo embutidos):
+- `products.csv`: (item_id, name, category, price)
+- `orders.csv`: (user_id, item_id, event_type, timestamp)
+
+Faça o upload dos seus CSVs na página "Recomendações" do app, e o sistema treinará um modelo TwinRank customizado + índice FAISS em memória em poucos segundos.
+
+> 📚 **[Leia o Manual de Uso da Demo Plugável](docs/manual_demo_plugavel.md)** para o passo a passo completo.
+
+Para rodar o dashboard localmente:
+```bash
+poetry run streamlit run src/reco/frontend/app.py
 ```
 
 ---
