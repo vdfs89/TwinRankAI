@@ -10,13 +10,17 @@ st.set_page_config(page_title="Início - TwinRank AI", page_icon="🏠", layout=
 inject_custom_css()
 
 # Hero Section
-logo_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))), "docs", "logo.png")
-if os.path.exists(logo_path):
-    st.image(logo_path, width=500)
-else:
-    st.markdown("<h1 style='font-size: 3.5rem; margin-bottom: 0;'>TwinRank AI</h1>", unsafe_allow_html=True)
+col1, col2 = st.columns([1, 4])
+with col1:
+    logo_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))), "docs", "logo.png")
+    if os.path.exists(logo_path):
+        st.image(logo_path, width=150)
+    else:
+        st.write("🚀") # Fallback icon
 
-st.markdown("<h3 style='color: #9CA3AF; margin-top: 0;'>Motor de Recomendação Industrial com Deep Learning</h3>", unsafe_allow_html=True)
+with col2:
+    st.markdown("<h1 style='font-size: 3.5rem; margin-bottom: 0;'>TwinRank AI</h1>", unsafe_allow_html=True)
+    st.markdown("<h3 style='color: #9CA3AF; margin-top: 0;'>Motor de Recomendação Industrial com Deep Learning</h3>", unsafe_allow_html=True)
 
 st.markdown("---")
 
