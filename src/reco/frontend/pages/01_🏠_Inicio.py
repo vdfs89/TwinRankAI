@@ -1,22 +1,38 @@
 import os
-import streamlit as st
 import sys
 
+import streamlit as st
+
 # Ensure imports work from src
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))))
-from src.reco.frontend.utils import inject_custom_css
+sys.path.append(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+)
+from reco.frontend.utils import inject_custom_css
 
 st.set_page_config(page_title="Início - TwinRank AI", page_icon="🏠", layout="wide")
 inject_custom_css()
 
 # Hero Section
-logo_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))), "docs", "logo.png")
+logo_path = os.path.join(
+    os.path.dirname(
+        os.path.dirname(
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        )
+    ),
+    "docs",
+    "logo.png",
+)
 if os.path.exists(logo_path):
     st.image(logo_path, width=500)
 else:
-    st.markdown("<h1 style='font-size: 3.5rem; margin-bottom: 0;'>TwinRank AI</h1>", unsafe_allow_html=True)
+    st.markdown(
+        "<h1 style='font-size: 3.5rem; margin-bottom: 0;'>TwinRank AI</h1>", unsafe_allow_html=True
+    )
 
-st.markdown("<h3 style='color: #9CA3AF; margin-top: 0;'>Motor de Recomendação Industrial com Deep Learning</h3>", unsafe_allow_html=True)
+st.markdown(
+    "<h3 style='color: #9CA3AF; margin-top: 0;'>Motor de Recomendação Industrial com Deep Learning</h3>",
+    unsafe_allow_html=True,
+)
 
 st.markdown("---")
 
@@ -48,7 +64,13 @@ with col1:
         st.switch_page("pages/04_🚀_Recomendacoes.py")
 
 with col2:
-    st.link_button("📄 Repositório no GitHub", "https://github.com/vdfs89/TwinRankAI", use_container_width=True)
+    st.link_button(
+        "📄 Repositório no GitHub", "https://github.com/vdfs89/TwinRankAI", use_container_width=True
+    )
 
 with col3:
-    st.link_button("📊 Model Card", "https://github.com/vdfs89/TwinRankAI/blob/main/docs/model_card.md", use_container_width=True)
+    st.link_button(
+        "📊 Model Card",
+        "https://github.com/vdfs89/TwinRankAI/blob/main/docs/model_card.md",
+        use_container_width=True,
+    )

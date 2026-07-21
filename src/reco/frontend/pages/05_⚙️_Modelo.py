@@ -1,15 +1,20 @@
 import os
 import sys
+
 import streamlit as st
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))))
-from src.reco.frontend.utils import inject_custom_css
+sys.path.append(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+)
+from reco.frontend.utils import inject_custom_css
 
 st.set_page_config(page_title="Arquitetura do Modelo - TwinRank AI", page_icon="⚙️", layout="wide")
 inject_custom_css()
 
 st.title("⚙️ Arquitetura do Modelo")
-st.markdown("Visão geral da arquitetura do sistema de recomendação TwinRank AI, construída para escalabilidade industrial.")
+st.markdown(
+    "Visão geral da arquitetura do sistema de recomendação TwinRank AI, construída para escalabilidade industrial."
+)
 
 col1, col2 = st.columns(2)
 
@@ -20,7 +25,7 @@ with col1:
         "Uma torre processa os dados do usuário (Visitor) e a outra os dados do item (Product). "
         "As duas torres mapeiam suas respectivas entradas para um mesmo espaço latente denso (Embedding Space) de 128 dimensões."
     )
-    
+
     st.markdown("### 2. In-Batch Negative Sampling")
     st.write(
         "Para que a rede aprenda a diferenciar itens relevantes dos não relevantes, o TwinRank utiliza a técnica de "
@@ -35,7 +40,7 @@ with col2:
         "Portanto, os embeddings de todos os produtos são cacheados e indexados usando **FAISS** (Facebook AI Similarity Search) via `IndexFlatIP`. "
         "Isso reduz a latência da busca dos Top-K itens de centenas de milissegundos para **menos de 1 milissegundo**."
     )
-    
+
     st.markdown("### 4. Cache-Aside Pattern (Redis)")
     st.write(
         "A camada da API construída em FastAPI é protegida por um padrão **Cache-Aside** no Redis. "

@@ -1,9 +1,12 @@
 import os
 import sys
+
 import streamlit as st
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))))
-from src.reco.frontend.utils import inject_custom_css
+sys.path.append(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+)
+from reco.frontend.utils import inject_custom_css
 
 st.set_page_config(page_title="Sobre - TwinRank AI", page_icon="📚", layout="wide")
 inject_custom_css()

@@ -7,14 +7,10 @@ import pandas as pd
 import streamlit as st
 
 sys.path.append(
-    os.path.dirname(
-        os.path.dirname(
-            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        )
-    )
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 )
-from src.reco.demo.ecommerce_demo import load_demo_data, recommend_for_user, train_demo_model
-from src.reco.frontend.utils import inject_custom_css
+from reco.demo.ecommerce_demo import load_demo_data, recommend_for_user, train_demo_model
+from reco.frontend.utils import inject_custom_css
 
 st.set_page_config(page_title="Recomendações - TwinRank AI", page_icon="🚀", layout="wide")
 inject_custom_css()

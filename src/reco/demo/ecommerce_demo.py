@@ -3,8 +3,9 @@
 from pathlib import Path
 
 import pandas as pd
-from src.reco.models.two_tower import TwoTowerRecommender
-from src.reco.settings import Settings
+
+from reco.models.two_tower import TwoTowerRecommender
+from reco.settings import Settings
 
 
 def load_demo_data(products_csv: str, orders_csv: str) -> tuple[pd.DataFrame, pd.DataFrame]:
