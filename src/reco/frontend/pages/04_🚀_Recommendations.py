@@ -3,7 +3,7 @@ import sys
 import pandas as pd
 import streamlit as st
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))))
 from src.reco.frontend.utils import inject_custom_css
 from src.reco.demo.ecommerce_demo import PluggableRecommender
 
