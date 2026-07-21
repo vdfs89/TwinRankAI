@@ -6,7 +6,7 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))))
 from src.reco.frontend.utils import inject_custom_css
 
-st.set_page_config(page_title="Home - TwinRank AI", page_icon="🏠", layout="wide")
+st.set_page_config(page_title="Início - TwinRank AI", page_icon="🏠", layout="wide")
 inject_custom_css()
 
 # Hero Section

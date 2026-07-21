@@ -7,7 +7,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
 from src.reco.frontend.utils import inject_custom_css
 from src.reco.demo.ecommerce_demo import PluggableRecommender
 
-st.set_page_config(page_title="Recommendations - TwinRank AI", page_icon="🚀", layout="wide")
+st.set_page_config(page_title="Recomendações - TwinRank AI", page_icon="🚀", layout="wide")
 inject_custom_css()
 
 st.title("🚀 Pluggable Recommendations Demo")

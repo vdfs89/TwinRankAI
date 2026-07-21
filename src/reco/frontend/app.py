@@ -8,4 +8,4 @@ st.set_page_config(
 )
 
 # Redirect to the actual Home page in the pages/ directory
-st.switch_page("pages/01_🏠_Home.py")
+st.switch_page("pages/01_🏠_Inicio.py")

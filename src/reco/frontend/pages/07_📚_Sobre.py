@@ -5,7 +5,7 @@ import streamlit as st
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))))
 from src.reco.frontend.utils import inject_custom_css
 
-st.set_page_config(page_title="About - TwinRank AI", page_icon="📚", layout="wide")
+st.set_page_config(page_title="Sobre - TwinRank AI", page_icon="📚", layout="wide")
 inject_custom_css()
 
 st.title("📚 About TwinRank AI")

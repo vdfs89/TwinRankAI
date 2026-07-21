@@ -23,8 +23,8 @@ st.markdown("### Histórico de Experimentos Recentes (Mockup)")
 data = {
     "Run ID": ["a1b2c3d4", "f5e6d7c8", "9a8b7c6d", "1a2b3c4d"],
     "Model": ["Two-Tower", "Two-Tower", "Matrix Factorization", "Popularity"],
-    "Embed Dim": [128, 64, 64, "N/A"],
-    "Learning Rate": [0.001, 0.005, 0.01, "N/A"],
+    "Embed Dim": ["128", "64", "64", "N/A"],
+    "Learning Rate": ["0.001", "0.005", "0.01", "N/A"],
     "Recall@10": [0.812, 0.765, 0.450, 0.151],
     "Status": ["✅ COMPLETED", "✅ COMPLETED", "✅ COMPLETED", "✅ COMPLETED"]
 }

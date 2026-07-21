@@ -5,10 +5,10 @@ import streamlit as st
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))))
 from src.reco.frontend.utils import inject_custom_css
 
-st.set_page_config(page_title="Model Architecture - TwinRank AI", page_icon="⚙️", layout="wide")
+st.set_page_config(page_title="Arquitetura do Modelo - TwinRank AI", page_icon="⚙️", layout="wide")
 inject_custom_css()
 
-st.title("⚙️ Model Architecture")
+st.title("⚙️ Arquitetura do Modelo")
 st.markdown("Visão geral da arquitetura do sistema de recomendação TwinRank AI, construída para escalabilidade industrial.")
 
 col1, col2 = st.columns(2)
