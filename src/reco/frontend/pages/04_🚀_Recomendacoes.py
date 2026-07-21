@@ -18,7 +18,7 @@ from reco.frontend.utils import inject_custom_css  # noqa: E402
 st.set_page_config(page_title="Recomendações - TwinRank AI", page_icon="🚀", layout="wide")
 inject_custom_css()
 
-st.title("🚀 Pluggable Recommendations Demo")
+st.title("🚀 Demo Plugável de Recomendações")
 st.markdown(
     "Suba as suas planilhas de **Produtos** e **Pedidos**, e tenha um sistema "
     "de recomendação neural treinado exclusivamente para a sua loja em poucos segundos!"
@@ -26,8 +26,8 @@ st.markdown(
 
 # Sidebar instructions
 st.sidebar.header("1. Upload de Dados")
-products_file = st.sidebar.file_uploader("Upload products.csv", type=["csv"])
-orders_file = st.sidebar.file_uploader("Upload orders.csv", type=["csv"])
+products_file = st.sidebar.file_uploader("Upload de products.csv", type=["csv"])
+orders_file = st.sidebar.file_uploader("Upload de orders.csv", type=["csv"])
 
 
 @st.cache_resource(show_spinner="Treinando o modelo TwinRank na sua base (Two-Tower + FAISS)...")
@@ -69,7 +69,7 @@ try:
                 "Tente outro usuário ou use uma amostra maior de dados."
             )
         else:
-            st.success("TwinRank trained on your data in ~1.5s ⚡")
+            st.success("TwinRank treinado nos seus dados em ~1.5s ⚡")
             # Exibir como grid/cards
             cols = st.columns(min(len(recos), 4))
             for idx, item in enumerate(recos):
