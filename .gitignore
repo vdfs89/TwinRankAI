@@ -12,3 +12,8 @@ mlruns/
 .coverage
 .dvc/cache
 models/
+.ruff_cache/
+.DS_Store
+*.log
+.coverage
+htmlcov/
