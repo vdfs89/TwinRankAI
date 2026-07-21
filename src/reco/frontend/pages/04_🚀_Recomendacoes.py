@@ -1,18 +1,28 @@
+"""Página de demonstração plugável de recomendações."""
+
 import os
 import sys
+
 import pandas as pd
 import streamlit as st
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))))
+sys.path.append(
+    os.path.dirname(
+        os.path.dirname(
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        )
+    )
+)
+from src.reco.demo.ecommerce_demo import load_demo_data, recommend_for_user, train_demo_model
 from src.reco.frontend.utils import inject_custom_css
-from src.reco.demo.ecommerce_demo import PluggableRecommender
 
 st.set_page_config(page_title="Recomendações - TwinRank AI", page_icon="🚀", layout="wide")
 inject_custom_css()
 
 st.title("🚀 Pluggable Recommendations Demo")
 st.markdown(
-    "Suba as suas planilhas de **Produtos** e **Pedidos**, e tenha um sistema de recomendação neural treinado exclusivamente para a sua loja em poucos segundos!"
+    "Suba as suas planilhas de **Produtos** e **Pedidos**, e tenha um sistema "
+    "de recomendação neural treinado exclusivamente para a sua loja em poucos segundos!"
 )
 
 # Sidebar instructions
@@ -20,25 +30,33 @@ st.sidebar.header("1. Upload de Dados")
 products_file = st.sidebar.file_uploader("Upload products.csv", type=["csv"])
 orders_file = st.sidebar.file_uploader("Upload orders.csv", type=["csv"])
 
+
 @st.cache_resource(show_spinner="Treinando o modelo TwinRank na sua base (Two-Tower + FAISS)...")
-def get_recommender(products_csv, orders_csv):
-    prod_df = pd.read_csv(products_csv)
-    ord_df = pd.read_csv(orders_csv)
-    return PluggableRecommender(prod_df, ord_df), prod_df, ord_df
+def get_recommender(
+    products_csv: object, orders_csv: object
+) -> tuple[object, pd.DataFrame, pd.DataFrame]:
+    """Inicializa e treina o modelo de recomendação com os dados carregados."""
+    prod_df, ord_df = load_demo_data(products_csv, orders_csv)
+    model = train_demo_model(ord_df)
+    return model, prod_df, ord_df
+
 
 # Fallback para dados dummy
 if not products_file or not orders_file:
     st.info(
-        "Usando dados de exemplo (dummy_data). Faça o upload das suas planilhas para testar com seus próprios dados."
+        "Usando dados de exemplo (dummy_data). "
+        "Faça o upload das suas planilhas para testar com seus próprios dados."
     )
     base_dir = os.path.dirname(
-        os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+        os.path.dirname(
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        )
     )
     products_file = os.path.join(base_dir, "dummy_data", "products_sample.csv")
     orders_file = os.path.join(base_dir, "dummy_data", "orders_sample.csv")
 
 try:
-    recommender, prod_df, ord_df = get_recommender(products_file, orders_file)
+    model, prod_df, ord_df = get_recommender(products_file, orders_file)
     st.sidebar.success("Modelo treinado com sucesso!")
 
     st.sidebar.header("2. Recomendações")
@@ -49,11 +67,12 @@ try:
     if st.sidebar.button("Gerar Recomendações", type="primary"):
         st.subheader(f"Recomendações para o Usuário `{selected_user}`")
 
-        recos = recommender.recommend_for_user(selected_user, top_k)
+        recos = recommend_for_user(model, prod_df, selected_user, top_k)
 
         if not recos:
             st.warning(
-                "Nenhuma recomendação encontrada. Tente outro usuário ou aumente a quantidade de eventos."
+                "Nenhuma recomendação encontrada. "
+                "Tente outro usuário ou aumente a quantidade de eventos."
             )
         else:
             # Exibir como grid/cards
