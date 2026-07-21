@@ -8,12 +8,8 @@ from fastapi import FastAPI, HTTPException
 
 from reco.pipelines.feature_eng import run as run_feature_engineering
 from reco.pipelines.preprocess import run as run_preprocess
-from reco.serving.schemas import PredictRequest
-from reco.serving.schemas import PredictResponse
-from reco.serving.schemas import RecommendResponse
-from reco.serving.schemas import TrainResponse
-from reco.serving.service import RecommendationService
-from reco.serving.service import get_recommendation_service
+from reco.serving.schemas import PredictRequest, PredictResponse, RecommendResponse, TrainResponse
+from reco.serving.service import RecommendationService, get_recommendation_service
 from reco.settings import Settings, get_settings
 from reco.training.train import run_training_pipeline
 
@@ -31,12 +27,12 @@ def _service() -> RecommendationService:
 
 
 @app.get("/health")
-def health() -> dict[str, str]:
+def health() -> dict[str, str]:  # noqa: D103
     return {"status": "ok"}
 
 
 @app.get("/model/version")
-def model_version() -> dict[str, str]:
+def model_version() -> dict[str, str]:  # noqa: D103
     settings = _settings()
     return {
         "model_path": str(settings.model_path),
@@ -46,13 +42,13 @@ def model_version() -> dict[str, str]:
 
 
 @app.get("/recommend/{user_id}", response_model=RecommendResponse)
-def recommend(user_id: int, top_k: int = 10) -> RecommendResponse:
+def recommend(user_id: int, top_k: int = 10) -> RecommendResponse:  # noqa: D103
     item_ids = _service().recommend(user_id, top_k)
     return RecommendResponse(user_id=user_id, item_ids=item_ids)
 
 
 @app.post("/predict", response_model=PredictResponse)
-def predict(payload: PredictRequest) -> PredictResponse:
+def predict(payload: PredictRequest) -> PredictResponse:  # noqa: D103
     recommendations = _service().predict(
         payload.user_id,
         payload.candidate_item_ids,
@@ -65,7 +61,7 @@ def predict(payload: PredictRequest) -> PredictResponse:
 
 
 @app.post("/train", response_model=TrainResponse)
-def train() -> TrainResponse:
+def train() -> TrainResponse:  # noqa: D103
     try:
         results = run_training_pipeline(_settings())
     except FileNotFoundError as exc:
@@ -85,7 +81,7 @@ def train() -> TrainResponse:
 
 
 @app.post("/preprocess")
-def preprocess() -> dict[str, str]:
+def preprocess() -> dict[str, str]:  # noqa: D103
     artifacts = run_preprocess(_settings())
     _service.cache_clear()
     return {
@@ -95,7 +91,7 @@ def preprocess() -> dict[str, str]:
 
 
 @app.post("/feature-eng")
-def feature_eng() -> dict[str, str]:
+def feature_eng() -> dict[str, str]:  # noqa: D103
     artifacts = run_feature_engineering(_settings())
     _service.cache_clear()
     return {

@@ -1,15 +1,17 @@
 """Módulo de demonstração do e-commerce com modelo Two-Tower."""
 
+from dataclasses import dataclass
 from pathlib import Path
 
 import pandas as pd
 
 from reco.models.two_tower import TwoTowerRecommender
-from dataclasses import dataclass
+
 
 @dataclass
 class DemoConfig:
     """Configuração mínima isolada para o demo, sem dependência do ambiente global."""
+
     random_seed: int = 42
     embedding_dim: int = 16
     negative_samples_per_positive: int = 4
@@ -25,11 +27,11 @@ def load_demo_data(products_csv: object, orders_csv: object) -> tuple[pd.DataFra
     # pd.read_csv handles both str/Path and file-like objects (UploadedFile)
     prod_df = pd.read_csv(products_csv)
     ord_df = pd.read_csv(orders_csv)
-    
+
     # Padroniza coluna de usuário se for do dataset RetailRocket original
     if "visitorid" in ord_df.columns and "user_id" not in ord_df.columns:
         ord_df = ord_df.rename(columns={"visitorid": "user_id"})
-        
+
     return prod_df, ord_df
 
 

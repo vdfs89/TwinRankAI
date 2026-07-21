@@ -1,4 +1,4 @@
-import os
+import os  # noqa: D100
 import sys
 
 import streamlit as st
@@ -30,7 +30,7 @@ else:
     )
 
 st.markdown(
-    "<h3 style='color: #9CA3AF; margin-top: 0;'>Motor de Recomendação Industrial com Deep Learning</h3>",
+    "<h3 style='color: #9CA3AF; margin-top: 0;'>Motor de Recomendação Industrial com Deep Learning</h3>",  # noqa: E501
     unsafe_allow_html=True,
 )
 

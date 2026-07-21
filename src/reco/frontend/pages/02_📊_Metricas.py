@@ -1,4 +1,4 @@
-import os
+import os  # noqa: D100
 import sys
 
 import plotly.graph_objects as go
@@ -14,7 +14,7 @@ inject_custom_css()
 
 st.title("📊 Model Analytics")
 st.markdown(
-    "Comparativo de performance entre os modelos treinados (Two-Tower vs. Matrix Factorization vs. Popularity)."
+    "Comparativo de performance entre os modelos treinados (Two-Tower vs. Matrix Factorization vs. Popularity)."  # noqa: E501
 )
 
 # Dados fictícios para o mockup de comparação (podem ser lidos do JSON na versão final)
@@ -45,7 +45,7 @@ st.plotly_chart(fig, use_container_width=True)
 
 st.markdown("### Por que o Two-Tower supera os baselines?")
 st.write(
-    "Ao contrário do SVD Clássico (Matrix Factorization) que possui dificuldades severas em lidar com catálogos esparsos e "
-    "cold-start de itens long-tail, o modelo de Duas Torres aprende representações ricas a partir das interações "
-    "diretas usando Negative Sampling em batch. Aliado à indexação baseada em Produto Interno no FAISS, a inferência é O(1) com Recall altíssimo."
+    "Ao contrário do SVD Clássico (Matrix Factorization) que possui dificuldades severas em lidar com catálogos esparsos e "  # noqa: E501
+    "cold-start de itens long-tail, o modelo de Duas Torres aprende representações ricas a partir das interações "  # noqa: E501
+    "diretas usando Negative Sampling em batch. Aliado à indexação baseada em Produto Interno no FAISS, a inferência é O(1) com Recall altíssimo."  # noqa: E501
 )

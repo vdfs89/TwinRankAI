@@ -22,7 +22,7 @@ logger = get_logger(__name__)
 
 
 @dataclass(frozen=True)
-class TrainingRunResult:
+class TrainingRunResult:  # noqa: D101
     model_type: ModelType
     run_id: str
     model_path: Path
@@ -41,8 +41,7 @@ def _build_test_lookup(
     lookup: dict[int, dict[int, float]] = {}
     for visitor_id, group in test_events.groupby("visitorid"):
         lookup[int(visitor_id)] = {
-            int(row.itemid): float(row.relevance)
-            for row in group.itertuples(index=False)
+            int(row.itemid): float(row.relevance) for row in group.itertuples(index=False)
         }
     return lookup
 
@@ -70,9 +69,7 @@ def _run_single_experiment(
                 "embedding_dim": settings.embedding_dim,
                 "learning_rate": settings.learning_rate,
                 "batch_size": settings.batch_size,
-                "negative_samples_per_positive": (
-                    settings.negative_samples_per_positive
-                ),
+                "negative_samples_per_positive": (settings.negative_samples_per_positive),
                 "max_epochs": settings.max_epochs,
                 "early_stopping_patience": settings.early_stopping_patience,
             }
@@ -108,7 +105,7 @@ def _run_single_experiment(
         )
 
 
-def run_training_pipeline(
+def run_training_pipeline(  # noqa: D103
     settings: Settings | None = None,
 ) -> list[TrainingRunResult]:
     current_settings = settings or get_settings()
@@ -142,7 +139,7 @@ def run_training_pipeline(
     return results
 
 
-def main() -> int:
+def main() -> int:  # noqa: D103
     run_training_pipeline()
     return 0
 

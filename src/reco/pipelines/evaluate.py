@@ -30,7 +30,7 @@ def _build_lookup(test_events: pd.DataFrame) -> dict[int, dict[int, float]]:
     return lookup
 
 
-def run(settings: Settings) -> Path:
+def run(settings: Settings) -> Path:  # noqa: D103
     configure_mlflow(settings)
 
     test_path = settings.processed_data_dir / "test_features.csv"
@@ -58,7 +58,7 @@ def run(settings: Settings) -> Path:
     return metrics_path
 
 
-def main() -> int:
+def main() -> int:  # noqa: D103
     run(Settings())
     return 0
 

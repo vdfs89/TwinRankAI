@@ -1,4 +1,4 @@
-import os
+import os  # noqa: D100
 import sys
 
 import pandas as pd
@@ -14,12 +14,12 @@ inject_custom_css()
 
 st.title("📈 MLOps & Tracking")
 st.markdown(
-    "Monitoramento de experimentos, versionamento de hiperparâmetros e registro de modelos utilizando **MLflow**."
+    "Monitoramento de experimentos, versionamento de hiperparâmetros e registro de modelos utilizando **MLflow**."  # noqa: E501
 )
 
 st.write(
-    "O TwinRank AI foi construído com as melhores práticas de MLOps. Todas as execuções de treinamento "
-    "são rastreadas. Registramos automaticamente as métricas de validação, os hiperparâmetros (como `learning_rate`, "
+    "O TwinRank AI foi construído com as melhores práticas de MLOps. Todas as execuções de treinamento "  # noqa: E501
+    "são rastreadas. Registramos automaticamente as métricas de validação, os hiperparâmetros (como `learning_rate`, "  # noqa: E501
     "`batch_size`, `embedding_dim`) e persistimos os pesos do modelo (Artifacts)."
 )
 
@@ -37,5 +37,5 @@ data = {
 st.dataframe(pd.DataFrame(data), use_container_width=True)
 
 st.info(
-    "Na infraestrutura em Cloud ou Local, acessar http://localhost:5000 exibe o painel oficial do MLflow com os gráficos interativos de cada step das épocas (Loss vs Epoch)."
+    "Na infraestrutura em Cloud ou Local, acessar http://localhost:5000 exibe o painel oficial do MLflow com os gráficos interativos de cada step das épocas (Loss vs Epoch)."  # noqa: E501
 )

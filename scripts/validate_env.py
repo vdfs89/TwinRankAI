@@ -11,7 +11,6 @@ import sys
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
-
 REQUIRED_PACKAGES = [
     "torch",
     "scikit-learn",
@@ -44,7 +43,7 @@ def check_environment() -> bool:
     return raw_data_dir.exists()
 
 
-def main() -> int:
+def main() -> int:  # noqa: D103
     missing_packages = check_packages()
     environment_ok = check_environment()
 

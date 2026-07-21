@@ -1,10 +1,7 @@
-import streamlit as st
+import streamlit as st  # noqa: D100
 
 st.set_page_config(
-    page_title="TwinRank AI",
-    page_icon="🚀",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    page_title="TwinRank AI", page_icon="🚀", layout="wide", initial_sidebar_state="expanded"
 )
 
 # Redirect to the actual Home page in the pages/ directory

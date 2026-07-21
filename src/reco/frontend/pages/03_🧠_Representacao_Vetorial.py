@@ -1,4 +1,4 @@
-import os
+import os  # noqa: D100
 import sys
 
 import numpy as np
@@ -16,12 +16,12 @@ inject_custom_css()
 
 st.title("🧠 Neural Embeddings (2D Projection)")
 st.markdown(
-    "Projeção UMAP simulada do espaço latente (128D -> 2D) para análise visual dos clusters semânticos aprendidos."
+    "Projeção UMAP simulada do espaço latente (128D -> 2D) para análise visual dos clusters semânticos aprendidos."  # noqa: E501
 )
 
 
 @st.cache_data
-def generate_mock_embeddings():
+def generate_mock_embeddings():  # noqa: ANN201
     """Gera dados de exemplo espalhados em clusters para visualização."""
     np.random.seed(42)
     categories = ["Electronics", "Apparel", "Home", "Toys"]
@@ -70,5 +70,5 @@ fig.update_layout(
 st.plotly_chart(fig, use_container_width=True)
 
 st.info(
-    "Neste scatter plot interativo, você pode observar como produtos de mesma categoria tendem a se aglomerar no espaço latente, provando que a rede neural aprendeu a similaridade semântica a partir apenas de metadados transacionais."
+    "Neste scatter plot interativo, você pode observar como produtos de mesma categoria tendem a se aglomerar no espaço latente, provando que a rede neural aprendeu a similaridade semântica a partir apenas de metadados transacionais."  # noqa: E501
 )

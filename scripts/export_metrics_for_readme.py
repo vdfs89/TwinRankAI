@@ -1,8 +1,8 @@
-import json
+import json  # noqa: D100
 from pathlib import Path
 
 
-def main():
+def main():  # noqa: ANN201, D103
     metrics_path = Path("reports/metrics.json")
     if not metrics_path.exists():
         print(f"File {metrics_path} not found. Please run 'dvc repro evaluate' first.")
@@ -40,7 +40,7 @@ def main():
                 ndcg = f"**{ndcg}**"
 
             print(
-                f"| {name.ljust(31)} | {recall.ljust(9)} | {map_score.ljust(9)} | {mrr.ljust(9)} | {ndcg.ljust(9)} |"
+                f"| {name.ljust(31)} | {recall.ljust(9)} | {map_score.ljust(9)} | {mrr.ljust(9)} | {ndcg.ljust(9)} |"  # noqa: E501
             )
 
 

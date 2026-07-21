@@ -16,7 +16,7 @@ logger = get_logger(__name__)
 
 
 @dataclass(frozen=True)
-class FeatureArtifacts:
+class FeatureArtifacts:  # noqa: D101
     train_features_path: Path
     test_features_path: Path
     visitor_mapping_path: Path
@@ -29,19 +29,17 @@ def _load_events(path: Path) -> pd.DataFrame:
     return pd.read_csv(path, parse_dates=["timestamp"])
 
 
-def build_id_mappings(
+def build_id_mappings(  # noqa: D103
     train_events: pd.DataFrame,
 ) -> tuple[dict[int, int], dict[int, int]]:
     visitors = sorted(train_events["visitorid"].unique().tolist())
     items = sorted(train_events["itemid"].unique().tolist())
-    visitor_mapping = {
-        int(visitor): index for index, visitor in enumerate(visitors)
-    }
+    visitor_mapping = {int(visitor): index for index, visitor in enumerate(visitors)}
     item_mapping = {int(item): index for index, item in enumerate(items)}
     return visitor_mapping, item_mapping
 
 
-def add_feature_columns(
+def add_feature_columns(  # noqa: D103
     events: pd.DataFrame,
     visitor_mapping: dict[int, int],
     item_mapping: dict[int, int],
@@ -55,7 +53,7 @@ def add_feature_columns(
     return featured
 
 
-def run(settings: Settings) -> FeatureArtifacts:
+def run(settings: Settings) -> FeatureArtifacts:  # noqa: D103
     train_path = settings.processed_data_dir / "train_events.csv"
     test_path = settings.processed_data_dir / "test_events.csv"
 
@@ -104,7 +102,7 @@ def run(settings: Settings) -> FeatureArtifacts:
     )
 
 
-def main() -> int:
+def main() -> int:  # noqa: D103
     run(Settings())
     return 0
 

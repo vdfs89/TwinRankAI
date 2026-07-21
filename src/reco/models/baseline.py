@@ -15,6 +15,7 @@ class PopularityRecommender:
     """Recomenda sempre os itens com maior soma de relevância (não-personalizado)."""
 
     def __init__(self) -> None:
+        """Initialize baseline."""
         self._ranked_items: list[int] = []
 
     def fit(self, train_events: pd.DataFrame) -> None:
@@ -27,7 +28,7 @@ class PopularityRecommender:
         return self._ranked_items[:k]
 
     def save(self, path: str) -> None:
-        """Persiste a lista ranqueada de itens em disco."""
+        """Save ranked items to disk."""
         joblib.dump(self._ranked_items, path)
 
     def load(self, path: str) -> None:
@@ -39,6 +40,7 @@ class MatrixFactorizationRecommender:
     """Baseline clássico: SVD truncado sobre a matriz visitor-item esparsa."""
 
     def __init__(self, embedding_dim: int = 64) -> None:
+        """Initialize TruncatedSVD baseline."""
         self._embedding_dim = embedding_dim
         self._svd = TruncatedSVD(n_components=embedding_dim, random_state=42)
         self._visitor_index: dict[int, int] = {}
@@ -74,7 +76,7 @@ class MatrixFactorizationRecommender:
         return [self._index_to_item[i] for i in top_indices]
 
     def save(self, path: str) -> None:
-        """Persiste os fatores latentes em disco."""
+        """Save latent factors to disk."""
         joblib.dump(
             {"visitor_factors": self._visitor_factors, "item_factors": self._item_factors}, path
         )

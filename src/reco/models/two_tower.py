@@ -73,6 +73,7 @@ class TwoTowerRecommender:
     """Wrapper de treino/inferência do modelo two-tower, com early stopping."""
 
     def __init__(self, settings: Settings) -> None:
+        """Initialize TwoTower model parameters."""
         self._settings = settings
         self._visitor_index: dict[int, int] = {}
         self._item_index: dict[int, int] = {}
@@ -144,7 +145,12 @@ class TwoTowerRecommender:
         self._faiss_index.add(item_emb)
         logger.info("faiss_index_construido", num_items=self._faiss_index.ntotal)
 
-    def _run_epoch(self, loader: DataLoader, optimizer: torch.optim.Optimizer, criterion) -> float:
+    def _run_epoch(
+        self,
+        loader: DataLoader,
+        optimizer: torch.optim.Optimizer,
+        criterion: torch.nn.Module,
+    ) -> float:
         """Executa uma época de treino e retorna a loss média."""
         assert self._net is not None
         self._net.train()
@@ -191,7 +197,7 @@ class TwoTowerRecommender:
         return [self._index_to_item[i] for i in top_indices if i in self._index_to_item]
 
     def save(self, path: str) -> None:
-        """Persiste pesos do modelo e os índices visitor/item."""
+        """Save model weights and index structures."""
         assert self._net is not None
         torch.save(
             {

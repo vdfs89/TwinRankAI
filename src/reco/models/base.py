@@ -22,7 +22,7 @@ class RecommenderModel(Protocol):
         ...
 
     def save(self, path: str) -> None:
-        """Persiste o modelo treinado em disco."""
+        """Save the trained model to disk."""
         ...
 
     def load(self, path: str) -> None:

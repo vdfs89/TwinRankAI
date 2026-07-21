@@ -20,22 +20,22 @@ class _StructuredFormatter(logging.Formatter):
 class StructuredLogger:
     """Wrapper fino sobre logging.Logger que aceita kwargs como campos estruturados."""
 
-    def __init__(self, logger: logging.Logger) -> None:
+    def __init__(self, logger: logging.Logger) -> None:  # noqa: D107
         self._logger = logger
 
-    def _log(self, level: int, event: str, **kwargs: Any) -> None:
+    def _log(self, level: int, event: str, **kwargs: Any) -> None:  # noqa: ANN401
         self._logger.log(level, event, extra={"extra_fields": kwargs})
 
-    def info(self, event: str, **kwargs: Any) -> None:
+    def info(self, event: str, **kwargs: Any) -> None:  # noqa: ANN401, D102
         self._log(logging.INFO, event, **kwargs)
 
-    def warning(self, event: str, **kwargs: Any) -> None:
+    def warning(self, event: str, **kwargs: Any) -> None:  # noqa: ANN401, D102
         self._log(logging.WARNING, event, **kwargs)
 
-    def error(self, event: str, **kwargs: Any) -> None:
+    def error(self, event: str, **kwargs: Any) -> None:  # noqa: ANN401, D102
         self._log(logging.ERROR, event, **kwargs)
 
-    def debug(self, event: str, **kwargs: Any) -> None:
+    def debug(self, event: str, **kwargs: Any) -> None:  # noqa: ANN401, D102
         self._log(logging.DEBUG, event, **kwargs)
 
 

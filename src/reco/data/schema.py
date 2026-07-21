@@ -18,7 +18,7 @@ class EventsSchema(pa.DataFrameModel):
     itemid: Series[int] = pa.Field(ge=0)
     transactionid: Series[float] = pa.Field(nullable=True)
 
-    class Config:
+    class Config:  # noqa: D106
         coerce = True
         strict = False
 
@@ -31,7 +31,7 @@ class ItemPropertiesSchema(pa.DataFrameModel):
     property: Series[str]
     value: Series[str]
 
-    class Config:
+    class Config:  # noqa: D106
         coerce = True
         strict = False
 
@@ -42,7 +42,7 @@ class CategoryTreeSchema(pa.DataFrameModel):
     categoryid: Series[int] = pa.Field(ge=0)
     parentid: Series[float] = pa.Field(nullable=True)
 
-    class Config:
+    class Config:  # noqa: D106
         coerce = True
         strict = False
 

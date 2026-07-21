@@ -8,8 +8,12 @@ import streamlit as st
 
 BASE_DIR = Path(__file__).resolve().parents[4]
 sys.path.append(str(BASE_DIR / "src"))
-from reco.demo.ecommerce_demo import load_demo_data, recommend_for_user, train_demo_model
-from reco.frontend.utils import inject_custom_css
+from reco.demo.ecommerce_demo import (  # noqa: E402
+    load_demo_data,
+    recommend_for_user,
+    train_demo_model,
+)
+from reco.frontend.utils import inject_custom_css  # noqa: E402
 
 st.set_page_config(page_title="Recomendações - TwinRank AI", page_icon="🚀", layout="wide")
 inject_custom_css()
@@ -69,7 +73,7 @@ try:
             # Exibir como grid/cards
             cols = st.columns(min(len(recos), 4))
             for idx, item in enumerate(recos):
-                with cols[idx % 4]:
+                with cols[idx % 4]:  # noqa: SIM117
                     with st.container(border=True):
                         st.markdown(f"**{item['name']}**")
                         st.caption(f"Categoria: {item['category']}")

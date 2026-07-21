@@ -17,7 +17,7 @@ logger = get_logger(__name__)
 
 
 @dataclass(frozen=True)
-class PreprocessArtifacts:
+class PreprocessArtifacts:  # noqa: D101
     train_path: Path
     test_path: Path
     processed_events_path: Path
@@ -27,14 +27,14 @@ def _raw_events_path(settings: Settings) -> Path:
     return settings.raw_data_dir / settings.events_file
 
 
-def load_events(settings: Settings) -> pd.DataFrame:
+def load_events(settings: Settings) -> pd.DataFrame:  # noqa: D103
     path = _raw_events_path(settings)
     if not path.exists():
         raise FileNotFoundError(f"Arquivo bruto não encontrado: {path}")
     return pd.read_csv(path)
 
 
-def preprocess_events(
+def preprocess_events(  # noqa: D103
     events: pd.DataFrame,
     settings: Settings,
 ) -> pd.DataFrame:
@@ -54,7 +54,7 @@ def preprocess_events(
     return enriched
 
 
-def split_train_test(
+def split_train_test(  # noqa: D103
     events: pd.DataFrame,
     test_fraction: float = 0.2,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -67,15 +67,13 @@ def split_train_test(
     return train, test
 
 
-def run(settings: Settings) -> PreprocessArtifacts:
+def run(settings: Settings) -> PreprocessArtifacts:  # noqa: D103
     events = load_events(settings)
     processed = preprocess_events(events, settings)
     train, test = split_train_test(processed)
 
     settings.processed_data_dir.mkdir(parents=True, exist_ok=True)
-    processed_events_path = (
-        settings.processed_data_dir / "events_processed.csv"
-    )
+    processed_events_path = settings.processed_data_dir / "events_processed.csv"
     train_path = settings.processed_data_dir / "train_events.csv"
     test_path = settings.processed_data_dir / "test_events.csv"
 
@@ -96,7 +94,7 @@ def run(settings: Settings) -> PreprocessArtifacts:
     )
 
 
-def main() -> int:
+def main() -> int:  # noqa: D103
     run(Settings())
     return 0
 

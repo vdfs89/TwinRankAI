@@ -15,8 +15,8 @@ from reco.utils.logging import get_logger
 logger = get_logger(__name__)
 
 
-class RecommendationService:
-    def __init__(self, settings: Settings) -> None:
+class RecommendationService:  # noqa: D101
+    def __init__(self, settings: Settings) -> None:  # noqa: D107
         self._settings = settings
         self._model = create_model(ModelType.TWO_TOWER, settings)
         self._load_model_if_available()
@@ -35,7 +35,7 @@ class RecommendationService:
         if Path(model_path).exists():
             self._model.load(str(model_path))
 
-    def recommend(self, user_id: int, top_k: int) -> list[int]:
+    def recommend(self, user_id: int, top_k: int) -> list[int]:  # noqa: D102
         cache_key = f"reco:user:{user_id}:k:{top_k}"
 
         if self._redis:
@@ -77,5 +77,5 @@ class RecommendationService:
 
 
 @lru_cache(maxsize=1)
-def get_recommendation_service(settings: Settings) -> RecommendationService:
+def get_recommendation_service(settings: Settings) -> RecommendationService:  # noqa: D103
     return RecommendationService(settings)

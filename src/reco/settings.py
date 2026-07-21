@@ -15,7 +15,7 @@ from pydantic.v1 import (  # type: ignore[attr-defined]
 class Settings(PydanticBaseSettings):
     """Configurações de ambiente, dados, modelo e serviço."""
 
-    class Config:
+    class Config:  # noqa: D106
         env_file = ".env"
         env_file_encoding = "utf-8"
 
@@ -96,5 +96,5 @@ class Settings(PydanticBaseSettings):
 
 
 def get_settings() -> Settings:
-    """Factory simples para permitir override em testes."""
+    """Factory simples para permitir override em testes."""  # noqa: D401
     return Settings()

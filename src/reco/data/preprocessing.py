@@ -26,7 +26,7 @@ class ImplicitFeedbackWeightingStrategy:
     quanto para calcular NDCG ponderado (não apenas binário 0/1).
     """
 
-    def __init__(self, settings: Settings) -> None:
+    def __init__(self, settings: Settings) -> None:  # noqa: D107
         self._weights = {
             "view": settings.weight_view,
             "addtocart": settings.weight_addtocart,
@@ -47,7 +47,7 @@ class SessionWindowStrategy:
     sequencial do usuário, não apenas interações agregadas.
     """
 
-    def __init__(self, session_gap_seconds: int = 1800) -> None:
+    def __init__(self, session_gap_seconds: int = 1800) -> None:  # noqa: D107
         self._session_gap_ms = session_gap_seconds * 1000
 
     def transform(self, events: pd.DataFrame) -> pd.DataFrame:

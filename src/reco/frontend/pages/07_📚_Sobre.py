@@ -1,4 +1,4 @@
-import os
+import os  # noqa: D100
 import sys
 
 import streamlit as st
@@ -16,7 +16,7 @@ st.markdown("Contexto sobre o desenvolvimento do projeto e seus criadores.")
 
 st.markdown("### Contexto Acadêmico & Portfolio")
 st.write(
-    "O **TwinRank AI** foi desenvolvido como resposta ao Tech Challenge (Fase 2) da **FIAP**, focado "
+    "O **TwinRank AI** foi desenvolvido como resposta ao Tech Challenge (Fase 2) da **FIAP**, focado "  # noqa: E501
     "na criação de sistemas de Machine Learning profissionais para o mundo real. "
     "O projeto demonstra as habilidades completas de um **Machine Learning Engineer**, cobrindo:"
 )
@@ -29,7 +29,7 @@ st.markdown(
     - **Backend & Serving**: Exposição do modelo com FastAPI, busca vetorial sub-milisegundo (FAISS) e cache (Redis).
     - **Frontend**: Criação de Dashboards executivos com Streamlit.
     - **Deploy**: Containerização full-stack com Docker Compose.
-    """
+    """  # noqa: E501
 )
 
 st.markdown("---")
