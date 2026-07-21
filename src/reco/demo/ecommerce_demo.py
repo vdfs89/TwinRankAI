@@ -8,14 +8,20 @@ from reco.models.two_tower import TwoTowerRecommender
 from reco.settings import Settings
 
 
-def load_demo_data(products_csv: str, orders_csv: str) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Carrega os DataFrames de Produtos e Pedidos a partir de arquivos CSV."""
+def load_demo_data(products_csv: object, orders_csv: object) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Carrega os DataFrames de Produtos e Pedidos a partir de arquivos CSV ou UploadedFile."""
+    # pd.read_csv handles both str/Path and file-like objects (UploadedFile)
     prod_df = pd.read_csv(products_csv)
     ord_df = pd.read_csv(orders_csv)
+    
+    # Padroniza coluna de usuário se for do dataset RetailRocket original
+    if "visitorid" in ord_df.columns and "user_id" not in ord_df.columns:
+        ord_df = ord_df.rename(columns={"visitorid": "user_id"})
+        
     return prod_df, ord_df
 
 
-def train_demo_model(orders_df: pd.DataFrame) -> TwoTowerRecommender:
+def train_demo_model(products_df: pd.DataFrame, orders_df: pd.DataFrame) -> TwoTowerRecommender:
     """Treina o modelo TwinRank (Two-Tower) localmente na base de pedidos fornecida.
 
     Gera automaticamente o índice FAISS.

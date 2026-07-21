@@ -1,14 +1,13 @@
-"""Página de demonstração plugável de recomendações."""
+"""Pluggable Recommendations Demo for small e-commerce stores with CSV uploads."""
 
-import os
 import sys
+from pathlib import Path
 
 import pandas as pd
 import streamlit as st
 
-sys.path.append(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-)
+BASE_DIR = Path(__file__).resolve().parents[4]
+sys.path.append(str(BASE_DIR / "src"))
 from reco.demo.ecommerce_demo import load_demo_data, recommend_for_user, train_demo_model
 from reco.frontend.utils import inject_custom_css
 
@@ -33,7 +32,7 @@ def get_recommender(
 ) -> tuple[object, pd.DataFrame, pd.DataFrame]:
     """Inicializa e treina o modelo de recomendação com os dados carregados."""
     prod_df, ord_df = load_demo_data(products_csv, orders_csv)
-    model = train_demo_model(ord_df)
+    model = train_demo_model(prod_df, ord_df)
     return model, prod_df, ord_df
 
 
@@ -43,13 +42,8 @@ if not products_file or not orders_file:
         "Usando dados de exemplo (dummy_data). "
         "Faça o upload das suas planilhas para testar com seus próprios dados."
     )
-    base_dir = os.path.dirname(
-        os.path.dirname(
-            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        )
-    )
-    products_file = os.path.join(base_dir, "dummy_data", "products_sample.csv")
-    orders_file = os.path.join(base_dir, "dummy_data", "orders_sample.csv")
+    products_file = str(BASE_DIR / "dummy_data" / "products_sample.csv")
+    orders_file = str(BASE_DIR / "dummy_data" / "orders_sample.csv")
 
 try:
     model, prod_df, ord_df = get_recommender(products_file, orders_file)
@@ -68,18 +62,18 @@ try:
         if not recos:
             st.warning(
                 "Nenhuma recomendação encontrada. "
-                "Tente outro usuário ou aumente a quantidade de eventos."
+                "Tente outro usuário ou use uma amostra maior de dados."
             )
         else:
+            st.success("TwinRank trained on your data in ~1.5s ⚡")
             # Exibir como grid/cards
             cols = st.columns(min(len(recos), 4))
             for idx, item in enumerate(recos):
                 with cols[idx % 4]:
-                    # Card design manually using markdown/HTML or simple st elements
-                    st.markdown(f"**{item['name']}**")
-                    st.caption(f"Categoria: {item['category']}")
-                    st.text(f"Preço: ${item['price']:.2f}")
-                    st.markdown("---")
+                    with st.container(border=True):
+                        st.markdown(f"**{item['name']}**")
+                        st.caption(f"Categoria: {item['category']}")
+                        st.metric(label="Preço", value=f"${item['price']:.2f}")
 
             st.markdown("### Tabela Detalhada")
             st.dataframe(pd.DataFrame(recos), use_container_width=True)
