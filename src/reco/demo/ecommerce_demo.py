@@ -1,57 +1,63 @@
+"""Módulo de demonstração do e-commerce com modelo Two-Tower."""
+
 from pathlib import Path
 
 import pandas as pd
+from src.reco.models.two_tower import TwoTowerRecommender
+from src.reco.settings import Settings
 
-from reco.models.two_tower import TwoTowerRecommender
-from reco.settings import Settings
+
+def load_demo_data(products_csv: str, orders_csv: str) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Carrega os DataFrames de Produtos e Pedidos a partir de arquivos CSV."""
+    prod_df = pd.read_csv(products_csv)
+    ord_df = pd.read_csv(orders_csv)
+    return prod_df, ord_df
 
 
-class PluggableRecommender:
-    def __init__(self, products_df: pd.DataFrame, orders_df: pd.DataFrame):
-        self.products_df = products_df
-        self.orders_df = orders_df
+def train_demo_model(orders_df: pd.DataFrame) -> TwoTowerRecommender:
+    """Treina o modelo TwinRank (Two-Tower) localmente na base de pedidos fornecida.
 
-        # Override settings for fast on-the-fly training
-        self.settings = Settings(
-            max_epochs=15,
-            batch_size=32,
-            embedding_dim=16,
-            early_stopping_patience=3,
-            redis_url="redis://localhost:6379/0",
-            faiss_index_path=Path("dummy_data/item_index.faiss"),
-        )
-        self.model = TwoTowerRecommender(self.settings)
-        self._prepare_and_train()
+    Gera automaticamente o índice FAISS.
+    """
+    settings = Settings(
+        max_epochs=15,
+        batch_size=32,
+        embedding_dim=16,
+        early_stopping_patience=3,
+        redis_url="redis://localhost:6379/0",
+        faiss_index_path=Path("dummy_data/item_index.faiss"),
+    )
+    model = TwoTowerRecommender(settings)
 
-    def _prepare_and_train(self):
-        # The TwoTowerRecommender expects 'visitorid' and 'itemid'
-        train_events = self.orders_df.rename(
-            columns={"user_id": "visitorid", "product_id": "itemid"}
-        )
+    # The TwoTowerRecommender expects 'visitorid' and 'itemid'
+    train_events = orders_df.rename(columns={"user_id": "visitorid", "product_id": "itemid"})
 
-        # Train on-the-fly (this builds the FAISS index automatically)
-        self.model.fit(train_events)
+    # Train on-the-fly (this builds the FAISS index automatically)
+    model.fit(train_events)
+    return model
 
-    def recommend_for_user(self, user_id: str, k: int = 10) -> list[dict]:
-        # predict_top_k in TwoTowerRecommender has a type hint of `int` for visitor_id
-        # but dynamically accepts the type that was passed in `fit()` (in this case `str`).
-        recommended_item_ids = self.model.predict_top_k(user_id, k)
 
-        if not recommended_item_ids:
-            return []
+def recommend_for_user(
+    model: TwoTowerRecommender, products_df: pd.DataFrame, user_id: str, k: int = 10
+) -> list[dict]:
+    """Gera as recomendações top-K para um usuário e enriquece com os metadados dos produtos."""
+    recommended_item_ids = model.predict_top_k(user_id, k)
 
-        # Build response with product metadata
-        recommendations = []
-        for pid in recommended_item_ids:
-            prod_info = self.products_df[self.products_df["product_id"] == pid]
-            if not prod_info.empty:
-                row = prod_info.iloc[0]
-                recommendations.append(
-                    {
-                        "product_id": str(pid),
-                        "name": str(row.get("name", "Unknown")),
-                        "category": str(row.get("category", "Unknown")),
-                        "price": float(row.get("price", 0.0)),
-                    }
-                )
-        return recommendations
+    if not recommended_item_ids:
+        return []
+
+    # Build response with product metadata
+    recommendations = []
+    for pid in recommended_item_ids:
+        prod_info = products_df[products_df["product_id"] == pid]
+        if not prod_info.empty:
+            row = prod_info.iloc[0]
+            recommendations.append(
+                {
+                    "product_id": str(pid),
+                    "name": str(row.get("name", "Unknown")),
+                    "category": str(row.get("category", "Unknown")),
+                    "price": float(row.get("price", 0.0)),
+                }
+            )
+    return recommendations
