@@ -1,11 +1,11 @@
 product_id,name,category,price
-P001,Laptop Gamer Pro,Electronics,1200.00
-P002,Mechanical Keyboard,Electronics,100.00
-P003,Wireless Mouse,Electronics,50.00
-P004,Gaming Monitor 27",Electronics,300.00
-P005,Cotton T-Shirt Black,Apparel,20.00
-P006,Running Shoes,Apparel,80.00
-P007,Jeans Classic,Apparel,40.00
-P008,Coffee Mug,Home,15.00
-P009,Office Chair,Home,150.00
-P010,Desk Lamp,Home,35.00
+P001,Notebook Gamer Pro,Eletrônicos,4500.00
+P002,Teclado Mecânico,Eletrônicos,300.00
+P003,Mouse Sem Fio,Eletrônicos,150.00
+P004,Monitor Gamer 27",Eletrônicos,1200.00
+P005,Camiseta de Algodão Preta,Vestuário,60.00
+P006,Tênis de Corrida,Vestuário,250.00
+P007,Calça Jeans Clássica,Vestuário,120.00
+P008,Caneca de Café,Casa,40.00
+P009,Cadeira de Escritório,Casa,600.00
+P010,Luminária de Mesa,Casa,100.00

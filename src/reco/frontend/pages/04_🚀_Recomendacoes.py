@@ -77,7 +77,7 @@ try:
                     with st.container(border=True):
                         st.markdown(f"**{item['name']}**")
                         st.caption(f"Categoria: {item['category']}")
-                        st.metric(label="Preço", value=f"${item['price']:.2f}")
+                        st.metric(label="Preço", value=f"R$ {item['price']:.2f}")
 
             st.markdown("### Tabela Detalhada")
             st.dataframe(pd.DataFrame(recos), use_container_width=True)
