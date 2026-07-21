@@ -26,6 +26,7 @@ O projeto combina Deep Learning, Engenharia de Machine Learning e MLOps em um pi
 
 - [Arquitetura](docs/architecture.md)
 - [Model Card](docs/model_card.md)
+- [Manual: Demo Plugável (SaaS)](docs/manual_demo_plugavel.md)
 - [Dataset](#dataset)
 - [Setup Local](#setup-local)
 - [Métricas](#métricas)
@@ -37,6 +38,8 @@ O projeto combina Deep Learning, Engenharia de Machine Learning e MLOps em um pi
 Imagine uma loja com milhões de produtos. Algumas visualizações, um item adicionado ao carrinho, uma remoção e um retorno posterior já podem revelar intenção. O TwinRank AI transforma esses sinais em representações estruturadas que sustentam recomendações personalizadas em escala.
 
 Mais do que um modelo, o TwinRank AI é um blueprint compacto de plataforma de recomendação: código limpo, pipelines reproduzíveis, rastreamento de experimentos e gestão de ciclo de vida próximos do que sistemas de ML em produção exigem.
+
+✨ **NOVO: Live Demo (SaaS)** - [Leia o Manual de Uso da Demo Plugável](docs/manual_demo_plugavel.md) para testar o poder da nossa arquitetura Two-Tower treinando um modelo on-the-fly, diretamente no navegador, fazendo o upload das suas próprias planilhas CSV!
 
 ---
 
