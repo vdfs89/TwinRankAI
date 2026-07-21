@@ -5,7 +5,19 @@ from pathlib import Path
 import pandas as pd
 
 from reco.models.two_tower import TwoTowerRecommender
-from reco.settings import Settings
+from dataclasses import dataclass
+
+@dataclass
+class DemoConfig:
+    """Configuração mínima isolada para o demo, sem dependência do ambiente global."""
+    random_seed: int = 42
+    embedding_dim: int = 16
+    negative_samples_per_positive: int = 4
+    learning_rate: float = 1e-3
+    batch_size: int = 32
+    max_epochs: int = 15
+    early_stopping_patience: int = 3
+    faiss_index_path: Path = Path("dummy_data/item_index.faiss")
 
 
 def load_demo_data(products_csv: object, orders_csv: object) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -26,15 +38,8 @@ def train_demo_model(products_df: pd.DataFrame, orders_df: pd.DataFrame) -> TwoT
 
     Gera automaticamente o índice FAISS.
     """
-    settings = Settings(
-        max_epochs=15,
-        batch_size=32,
-        embedding_dim=16,
-        early_stopping_patience=3,
-        redis_url="redis://localhost:6379/0",
-        faiss_index_path=Path("dummy_data/item_index.faiss"),
-    )
-    model = TwoTowerRecommender(settings)
+    settings = DemoConfig()
+    model = TwoTowerRecommender(settings)  # type: ignore
 
     # The TwoTowerRecommender expects 'visitorid' and 'itemid'
     train_events = orders_df.rename(columns={"user_id": "visitorid", "product_id": "itemid"})
