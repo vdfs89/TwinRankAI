@@ -17,3 +17,4 @@ models/
 *.log
 .coverage
 htmlcov/
+.vscode/
