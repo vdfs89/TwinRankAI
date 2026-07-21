@@ -188,7 +188,7 @@ Just provide two CSV files:
 
 Run the standalone dashboard:
 ```bash
-poetry run streamlit run src/reco/frontend/ecommerce_app.py
+poetry run streamlit run src/reco/frontend/app.py
 ```
 
 Upload your CSVs (or use the built-in dummy data), and the app will train a custom TwinRank model + FAISS index in memory in just a few seconds, unlocking state-of-the-art recommendations for your specific catalog.

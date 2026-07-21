@@ -1,13 +1,16 @@
 import os
-
+import sys
 import pandas as pd
 import streamlit as st
 
-from reco.demo.ecommerce_demo import PluggableRecommender
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
+from src.reco.frontend.utils import inject_custom_css
+from src.reco.demo.ecommerce_demo import PluggableRecommender
 
-st.set_page_config(page_title="TwinRank AI - Pluggable Demo", page_icon="🛍️")
+st.set_page_config(page_title="Recommendations - TwinRank AI", page_icon="🚀", layout="wide")
+inject_custom_css()
 
-st.title("🛍️ TwinRank AI para Pequenas Lojas")
+st.title("🚀 Pluggable Recommendations Demo")
 st.markdown(
     "Suba as suas planilhas de **Produtos** e **Pedidos**, e tenha um sistema de recomendação neural treinado exclusivamente para a sua loja em poucos segundos!"
 )
@@ -17,21 +20,19 @@ st.sidebar.header("1. Upload de Dados")
 products_file = st.sidebar.file_uploader("Upload products.csv", type=["csv"])
 orders_file = st.sidebar.file_uploader("Upload orders.csv", type=["csv"])
 
-
 @st.cache_resource(show_spinner="Treinando o modelo TwinRank na sua base (Two-Tower + FAISS)...")
 def get_recommender(products_csv, orders_csv):
     prod_df = pd.read_csv(products_csv)
     ord_df = pd.read_csv(orders_csv)
     return PluggableRecommender(prod_df, ord_df), prod_df, ord_df
 
-
 # Fallback para dados dummy
 if not products_file or not orders_file:
     st.info(
-        "Usando dados de exemplo (dummy_data). Faça o upload das suas planilhas para ver os seus dados."
+        "Usando dados de exemplo (dummy_data). Faça o upload das suas planilhas para testar com seus próprios dados."
     )
     base_dir = os.path.dirname(
-        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
     )
     products_file = os.path.join(base_dir, "dummy_data", "products_sample.csv")
     orders_file = os.path.join(base_dir, "dummy_data", "orders_sample.csv")
@@ -59,6 +60,7 @@ try:
             cols = st.columns(min(len(recos), 4))
             for idx, item in enumerate(recos):
                 with cols[idx % 4]:
+                    # Card design manually using markdown/HTML or simple st elements
                     st.markdown(f"**{item['name']}**")
                     st.caption(f"Categoria: {item['category']}")
                     st.text(f"Preço: ${item['price']:.2f}")

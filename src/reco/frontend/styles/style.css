@@ -1,0 +1,81 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&family=Poppins:wght@400;500;600;700;800&display=swap');
+
+/* Fontes Globais */
+html, body, [class*="css"] {
+    font-family: 'Inter', sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Poppins', sans-serif !important;
+    font-weight: 600 !important;
+    letter-spacing: -0.02em;
+}
+
+/* Esconder o menu de hambúrguer e rodapé do Streamlit */
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
+
+/* Customização dos botões principais */
+.stButton > button {
+    border-radius: 8px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    transition: all 0.2s ease-in-out;
+    border: 1px solid #232D3F;
+}
+
+.stButton > button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(91, 140, 255, 0.2);
+    border-color: #5B8CFF;
+}
+
+/* Customização de Cards (Metrics) */
+[data-testid="stMetricValue"] {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 2.2rem;
+    color: #5B8CFF;
+}
+
+[data-testid="stMetricLabel"] {
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #9CA3AF;
+}
+
+div[data-testid="metric-container"] {
+    background-color: #111827;
+    border: 1px solid #232D3F;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    transition: all 0.2s ease;
+}
+
+div[data-testid="metric-container"]:hover {
+    border-color: #5B8CFF;
+    transform: translateY(-2px);
+}
+
+/* Ajustes de DataFrame */
+[data-testid="stDataFrame"] {
+    border: 1px solid #232D3F;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+/* Sidebar Customization */
+[data-testid="stSidebar"] {
+    background-color: #080B14;
+    border-right: 1px solid #111827;
+}
+
+[data-testid="stSidebarNav"] span {
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 1.05rem;
+}
