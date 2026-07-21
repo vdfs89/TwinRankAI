@@ -25,3 +25,6 @@ dvc-repro:
 
 mlflow-ui:
 	poetry run mlflow ui --backend-store-uri ./mlruns
+
+mlflow-ui-local:
+	poetry run mlflow ui --backend-store-uri ./mlruns

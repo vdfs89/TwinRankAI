@@ -1,0 +1,22 @@
+# Configuration for the TwinRank AI reference experiment
+# on the RetailRocket dataset.
+
+# Data splitting
+test_days: 7
+min_session_events: 2
+
+# Global reproducibility
+random_seed: 42
+
+# Two-Tower Model Hyperparameters
+embedding_dim: 64
+learning_rate: 0.001
+batch_size: 1024
+max_epochs: 50
+early_stopping_patience: 5
+
+# Negative Sampling Strategy
+negative_samples_per_positive: 4
+
+# Evaluation
+top_k: 10

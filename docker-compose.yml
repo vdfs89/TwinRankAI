@@ -22,8 +22,10 @@ services:
     build: .
     depends_on:
       - mlflow
+      - redis
     environment:
       MLFLOW_TRACKING_URI: http://mlflow:5000
+      REDIS_URL: redis://redis:6379/0
     ports:
       - "8000:8000"
     volumes:
@@ -52,3 +54,23 @@ services:
       - python
       - -m
       - reco.training.train
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  streamlit:
+    build: .
+    depends_on:
+      - app
+    environment:
+      API_URL: http://app:8000
+    ports:
+      - "8501:8501"
+    command:
+      - streamlit
+      - run
+      - src/reco/frontend/app.py
+      - --server.address
+      - 0.0.0.0

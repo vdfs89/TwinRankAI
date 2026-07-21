@@ -40,6 +40,8 @@ stages:
       - data/processed/test_features.csv
     outs:
       - models/two_tower/model.joblib
+      - models/popularity/model.joblib
+      - models/matrix_factorization/model.joblib
 
   evaluate:
     cmd: python -m reco.pipelines.evaluate
@@ -50,5 +52,7 @@ stages:
       - src/reco/settings.py
       - data/processed/test_features.csv
       - models/two_tower/model.joblib
+      - models/popularity/model.joblib
+      - models/matrix_factorization/model.joblib
     metrics:
       - reports/metrics.json

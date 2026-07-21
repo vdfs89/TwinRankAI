@@ -84,6 +84,16 @@ class Settings(PydanticBaseSettings):
         alias="MODEL_PATH",
     )
 
+    # Cache & Retrieval
+    redis_url: str = Field(
+        default="redis://localhost:6379/0",
+        alias="REDIS_URL",
+    )
+    faiss_index_path: Path = Field(
+        default=Path("models/two_tower/item_index.faiss"),
+        alias="FAISS_INDEX_PATH",
+    )
+
 
 def get_settings() -> Settings:
     """Factory simples para permitir override em testes."""

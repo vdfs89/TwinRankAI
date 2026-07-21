@@ -5,6 +5,7 @@ interno entre os dois vetores. Treinado com Binary Cross-Entropy e
 negative sampling, conforme referência da Fase 2.
 """
 
+import faiss
 import numpy as np
 import pandas as pd
 import torch
@@ -77,6 +78,7 @@ class TwoTowerRecommender:
         self._item_index: dict[int, int] = {}
         self._index_to_item: dict[int, int] = {}
         self._net: _TwoTowerNet | None = None
+        self._faiss_index = None
         self._device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def fit(self, train_events: pd.DataFrame) -> None:
@@ -125,6 +127,23 @@ class TwoTowerRecommender:
                     logger.info("early_stopping_acionado", epoch=epoch, best_loss=best_loss)
                     break
 
+        self._build_faiss_index()
+
+    def _build_faiss_index(self) -> None:
+        """Constrói o índice FAISS com os embeddings dos itens."""
+        if self._net is None:
+            return
+
+        self._net.eval()
+        with torch.no_grad():
+            item_indices = torch.arange(len(self._item_index), device=self._device)
+            item_emb = self._net.item_tower(item_indices).cpu().numpy().astype(np.float32)
+
+        dim = item_emb.shape[1]
+        self._faiss_index = faiss.IndexFlatIP(dim)
+        self._faiss_index.add(item_emb)
+        logger.info("faiss_index_construido", num_items=self._faiss_index.ntotal)
+
     def _run_epoch(self, loader: DataLoader, optimizer: torch.optim.Optimizer, criterion) -> float:
         """Executa uma época de treino e retorna a loss média."""
         assert self._net is not None
@@ -155,15 +174,21 @@ class TwoTowerRecommender:
 
         self._net.eval()
         v_idx = torch.tensor([self._visitor_index[visitor_id]], device=self._device)
-        all_item_indices = torch.arange(len(self._item_index), device=self._device)
 
-        with torch.no_grad():
-            user_emb = self._net.user_tower(v_idx)
-            item_emb = self._net.item_tower(all_item_indices)
-            scores = (item_emb @ user_emb.T).squeeze(-1)
+        if self._faiss_index is not None:
+            with torch.no_grad():
+                user_emb = self._net.user_tower(v_idx).cpu().numpy().astype(np.float32)
+            scores, indices = self._faiss_index.search(user_emb, k)
+            top_indices = indices[0]
+        else:
+            all_item_indices = torch.arange(len(self._item_index), device=self._device)
+            with torch.no_grad():
+                user_emb = self._net.user_tower(v_idx)
+                item_emb = self._net.item_tower(all_item_indices)
+                scores = (item_emb @ user_emb.T).squeeze(-1)
+            top_indices = torch.topk(scores, k=min(k, len(scores))).indices.cpu().numpy()
 
-        top_indices = torch.topk(scores, k=min(k, len(scores))).indices.cpu().numpy()
-        return [self._index_to_item[i] for i in top_indices]
+        return [self._index_to_item[i] for i in top_indices if i in self._index_to_item]
 
     def save(self, path: str) -> None:
         """Persiste pesos do modelo e os índices visitor/item."""
@@ -176,6 +201,10 @@ class TwoTowerRecommender:
             },
             path,
         )
+        if self._faiss_index is not None:
+            faiss_path = self._settings.faiss_index_path
+            faiss_path.parent.mkdir(parents=True, exist_ok=True)
+            faiss.write_index(self._faiss_index, str(faiss_path))
 
     def load(self, path: str) -> None:
         """Carrega pesos do modelo e os índices visitor/item."""
@@ -190,3 +219,7 @@ class TwoTowerRecommender:
             embedding_dim=self._settings.embedding_dim,
         ).to(self._device)
         self._net.load_state_dict(checkpoint["state_dict"])
+
+        faiss_path = self._settings.faiss_index_path
+        if faiss_path.exists():
+            self._faiss_index = faiss.read_index(str(faiss_path))

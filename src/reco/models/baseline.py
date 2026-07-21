@@ -4,6 +4,7 @@ PopularityRecommender é o piso mínimo (não personaliza).
 MatrixFactorizationRecommender via SVD é o baseline clássico de recsys.
 """
 
+import joblib
 import numpy as np
 import pandas as pd
 from scipy.sparse import csr_matrix
@@ -27,11 +28,11 @@ class PopularityRecommender:
 
     def save(self, path: str) -> None:
         """Persiste a lista ranqueada de itens em disco."""
-        np.save(path, np.array(self._ranked_items))
+        joblib.dump(self._ranked_items, path)
 
     def load(self, path: str) -> None:
         """Carrega a lista ranqueada de itens do disco."""
-        self._ranked_items = np.load(path).tolist()
+        self._ranked_items = joblib.load(path)
 
 
 class MatrixFactorizationRecommender:
@@ -74,10 +75,12 @@ class MatrixFactorizationRecommender:
 
     def save(self, path: str) -> None:
         """Persiste os fatores latentes em disco."""
-        np.savez(path, visitor_factors=self._visitor_factors, item_factors=self._item_factors)
+        joblib.dump(
+            {"visitor_factors": self._visitor_factors, "item_factors": self._item_factors}, path
+        )
 
     def load(self, path: str) -> None:
         """Carrega os fatores latentes do disco."""
-        data = np.load(path)
+        data = joblib.load(path)
         self._visitor_factors = data["visitor_factors"]
         self._item_factors = data["item_factors"]

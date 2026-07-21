@@ -11,3 +11,4 @@ mlruns/
 .pytest_cache/
 .coverage
 .dvc/cache
+models/

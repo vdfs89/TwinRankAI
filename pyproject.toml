@@ -20,7 +20,10 @@ fastapi = "^0.111.0"
 uvicorn = { extras = ["standard"], version = "^0.30.0" }
 dvc = { extras = ["s3"], version = "^3.51.0" }
 python-dotenv = "^1.0.1"
-
+faiss-cpu = "^1.8.0"
+redis = "^5.0.0"
+streamlit = "^1.36.0"
+requests = "^2.32.0"
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.2.0"
 pytest-cov = "^5.0.0"

@@ -1,6 +1,9 @@
 # TwinRank AI
 
-**Deep Learning Recommendation Engine**
+ [🇧🇷 Português](README.md) · [🇬🇧 English](README.en.md)
+ ![Banner](docs/banner_github.png)
+
+**Motor de Recomendação com Deep Learning**
 
 [![PyTorch](https://img.shields.io/badge/PyTorch-EE4C2C?logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
@@ -9,57 +12,59 @@
 [![Ruff](https://img.shields.io/badge/Ruff-000000?logo=ruff&logoColor=white)](https://docs.astral.sh/ruff/)
 [![Pytest](https://img.shields.io/badge/Pytest-0A9EDC?logo=pytest&logoColor=white)](https://docs.pytest.org/)
 
-> **Learning Intent. Ranking Experiences.**
+> **Intenção de Aprendizado. Experiências com Ranking.**
 >
-> Every interaction tells a story. TwinRank AI learns it.
+> Cada interação conta uma história. O TwinRank AI aprende com ela.
 
-TwinRank AI is a production-oriented recommendation engine for e-commerce. It learns user intent from implicit signals such as clicks, views, cart events, and purchases, then maps users and items into a shared embedding space with a Two-Tower model.
+O TwinRank AI é um motor de recomendação para e-commerce orientado a produção. Ele aprende a intenção do usuário a partir de sinais implícitos como cliques, visualizações, eventos de carrinho e compras, e projeta usuários e itens em um espaço compartilhado de embeddings com um modelo Two-Tower.
 
-The project combines Deep Learning, Machine Learning Engineering, and MLOps in a reproducible pipeline for experimentation and deployment. Instead of relying only on popularity or static rules, it learns behavioral patterns with traceability, versioning, and operational rigor.
+O projeto combina Deep Learning, Engenharia de Machine Learning e MLOps em um pipeline reproduzível para experimentação e deploy. Em vez de depender apenas de popularidade ou regras estáticas, ele aprende padrões comportamentais com rastreabilidade, versionamento e rigor operacional.
 
-## Quick Links
+> Em nossa execução de referência, o modelo **Two-Tower melhorou o NDCG@10 em mais de 300%** em comparação com o baseline de popularidade, demonstrando sua capacidade de aprender preferências sutis dos usuários.
 
-- [Architecture](docs/architecture.md)
+## Links Rápidos
+
+- [Arquitetura](docs/architecture.md)
 - [Model Card](docs/model_card.md)
 - [Dataset](#dataset)
 - [Setup Local](#setup-local)
-- [Metrics](#metrics)
+- [Métricas](#métricas)
 
 ---
 
-## Product Vision
+## Visão do Produto
 
-Imagine a store with millions of products. A few views, a cart addition, a removal, and a later return can already reveal intent. TwinRank AI turns those signals into structured representations that support personalized recommendations at scale.
+Imagine uma loja com milhões de produtos. Algumas visualizações, um item adicionado ao carrinho, uma remoção e um retorno posterior já podem revelar intenção. O TwinRank AI transforma esses sinais em representações estruturadas que sustentam recomendações personalizadas em escala.
 
-More than a model, TwinRank AI is a compact recommendation platform blueprint: clean code, reproducible pipelines, experiment tracking, and lifecycle management close to what production ML systems require.
-
----
-
-## Why TwinRank AI
-
-- Learns from behavioral signals instead of depending only on popularity.
-- Uses neural embeddings for personalized ranking.
-- Supports scalable retrieval and ranking workflows through shared latent space.
-- Organizes data, experiments, and model lifecycle with reproducibility in mind.
-- Aligns software engineering and MLOps practices with recommendation development.
+Mais do que um modelo, o TwinRank AI é um blueprint compacto de plataforma de recomendação: código limpo, pipelines reproduzíveis, rastreamento de experimentos e gestão de ciclo de vida próximos do que sistemas de ML em produção exigem.
 
 ---
 
-## Core Architecture
+## Por que o TwinRank AI
 
-TwinRank AI is centered on a Two-Tower recommendation architecture. One tower learns a representation of the user from interaction history and contextual behavioral features, while the other learns a representation of the item from product identity and optional metadata. Recommendation relevance is computed from the similarity between those two embeddings, often using a dot product or related scoring function.
+- Aprende com sinais comportamentais em vez de depender apenas de popularidade.
+- Usa embeddings neurais para ranking personalizado.
+- Suporta fluxos escaláveis de recuperação e ranqueamento com espaço latente compartilhado.
+- Organiza dados, experimentos e ciclo de vida do modelo com foco em reprodutibilidade.
+- Alinha engenharia de software e MLOps ao desenvolvimento de recomendadores.
 
-This design is widely used for large-scale recommendation because it separates user and item encoding, making retrieval efficient and enabling representation learning in a shared vector space.
+---
+
+## Arquitetura Central
+
+O TwinRank AI é centrado em uma arquitetura de recomendação Two-Tower. Uma torre aprende a representação do usuário a partir do histórico de interações e de sinais comportamentais contextuais, enquanto a outra aprende a representação do item a partir da identidade do produto e, opcionalmente, de metadados. A relevância da recomendação é calculada pela similaridade entre esses dois embeddings, normalmente com dot product ou função de score equivalente.
+
+Esse desenho é amplamente usado em recomendação em larga escala porque separa a codificação de usuários e itens, tornando a recuperação mais eficiente e permitindo aprendizado representacional em um espaço vetorial compartilhado.
 
 ## Dataset
 
-The project is based on the RetailRocket E-commerce Dataset, with focus on the main interaction sources:
+O projeto é baseado no RetailRocket E-commerce Dataset, com foco nas principais fontes de interação:
 
 - `events.csv`
 - `item_properties.csv`
 - `category_tree.csv`
 
-Suggested download:
+Download sugerido:
 
 ```bash
 kaggle datasets download -d retailrocket/ecommerce-dataset -p data/raw --unzip
@@ -67,34 +72,34 @@ kaggle datasets download -d retailrocket/ecommerce-dataset -p data/raw --unzip
 
 ```mermaid
 flowchart TD
-    A[RetailRocket Dataset] --> B[Preprocess]
-    B --> C[Feature Engineering]
+    A[Dataset RetailRocket] --> B[Pré-processamento]
+    B --> C[Engenharia de Features]
     C --> D[Negative Sampling]
-    D --> E[Two-Tower Training]
-    E --> F[MLflow Tracking]
+    D --> E[Treinamento Two-Tower]
+    E --> F[Tracking no MLflow]
     F --> G[Model Registry]
-    G --> H[FastAPI Serving]
-    H --> I[Recommendation API]
+    G --> H[Serving com FastAPI]
+    H --> I[API de Recomendação]
 ```
 
-### Model View
+### Visão do Modelo
 
 ```mermaid
 flowchart LR
-    U[User ID / Behavioral Signals] --> UE[User Embedding]
-    UE --> UM[User Tower MLP]
+    U[ID do Usuário / Sinais Comportamentais] --> UE[Embedding do Usuário]
+    UE --> UM[MLP da User Tower]
 
-    I[Item ID / Item Features] --> IE[Item Embedding]
-    IE --> IM[Item Tower MLP]
+    I[ID do Item / Features do Item] --> IE[Embedding do Item]
+    IE --> IM[MLP da Item Tower]
 
-    UM --> S[Dot Product / Similarity Score]
+    UM --> S[Dot Product / Similaridade]
     IM --> S
-    S --> R[Recommendation Score]
+    S --> R[Score de Recomendação]
 ```
 
 ---
 
-## Repository Structure
+## Estrutura do Repositório
 
 ```text
 TwinRank-AI/
@@ -118,42 +123,42 @@ TwinRank-AI/
 └── Dockerfile
 ```
 
-The repository is organized to separate concerns across data processing, feature generation, model training, evaluation, serving, and infrastructure. This layout supports clean code practices, testability, and a reproducible workflow from raw events to deployed recommendation endpoints.
+O repositório separa responsabilidades entre processamento de dados, geração de features, treinamento de modelos, avaliação, serving e infraestrutura. Essa organização favorece código limpo, testabilidade e um fluxo reproduzível desde eventos brutos até endpoints de recomendação.
 
 ---
 
-## Expected Pipeline
+## Pipeline Esperada
 
-TwinRank AI is designed as a reproducible ML pipeline with explicit data and experiment lineage:
+O TwinRank AI foi desenhado como um pipeline de ML reproduzível, com linhagem explícita de dados e experimentos:
 
-1. Preprocess raw interaction logs and build user-item events.
-2. Engineer features and create indexed representations for users and items.
-3. Generate training pairs with negative sampling.
-4. Train the Two-Tower neural model in PyTorch.
-5. Evaluate ranking quality using recommendation metrics.
-6. Track runs, metrics, and artifacts in MLflow.
-7. Register the best model version and promote it through lifecycle stages.
-8. Serve recommendations through an API layer.
+1. Pré-processar logs brutos de interação e construir eventos user-item.
+2. Engenhar features e criar representações indexadas para usuários e itens.
+3. Gerar pares de treino com negative sampling.
+4. Treinar o modelo neural Two-Tower em PyTorch.
+5. Avaliar a qualidade do ranking com métricas de recomendação.
+6. Registrar runs, métricas e artefatos no MLflow.
+7. Registrar a melhor versão do modelo e promovê-la no ciclo de vida.
+8. Servir recomendações por uma camada de API.
 
-This workflow mirrors the staged pipelines used in practical ML systems, where reproducibility, observability, and controlled promotion matter as much as offline metrics.
+Esse fluxo reflete pipelines em estágios comuns em sistemas reais de recomendação, nos quais reprodutibilidade, observabilidade e promoção controlada importam tanto quanto a métrica offline.
 
 ---
 
-## Technology Stack
+## Stack Tecnológica
 
-| Layer | Tools |
-|--------|-------|
+| Camada | Ferramentas |
+|--------|-------------|
 | Deep Learning | PyTorch |
-| Baselines / Preprocessing | Scikit-Learn |
+| Baselines / Pré-processamento | Scikit-Learn |
 | API | FastAPI |
-| Experiment Tracking | MLflow |
-| Data and Pipeline Versioning | DVC |
-| Containerization | Docker, Docker Compose |
-| Dependency Management | Poetry |
-| Quality | Pytest, Ruff, pre-commit |
+| Tracking de Experimentos | MLflow |
+| Versionamento de Dados e Pipeline | DVC |
+| Containerização | Docker, Docker Compose |
+| Gerenciamento de Dependências | Poetry |
+| Qualidade | Pytest, Ruff, pre-commit |
 | CI/CD | GitHub Actions |
 
-These technologies reflect a modern MLOps-oriented stack for recommendation workflows, especially when model experimentation, reproducibility, and deployment-readiness are first-class concerns.
+Essas tecnologias refletem uma stack moderna orientada a MLOps para fluxos de recomendação, especialmente quando experimentação, reprodutibilidade e prontidão para deploy são requisitos centrais.
 
 ## Setup Local
 
@@ -165,13 +170,13 @@ make test
 make mlflow-ui
 ```
 
-Run the API locally:
+Executar a API localmente:
 
 ```bash
 python -m uvicorn reco.serving.api:app --reload
 ```
 
-Run the full pipeline:
+Executar o pipeline completo:
 
 ```bash
 dvc repro
@@ -179,96 +184,95 @@ dvc repro
 
 ---
 
-## Metrics
+## Métricas
 
-TwinRank AI evaluates recommendation quality with ranking-oriented metrics instead of relying only on classification-style accuracy. For recommendation systems, metrics such as Recall@K, MAP@K, MRR@K, and NDCG@K provide a more meaningful view of whether the model surfaces relevant items in useful positions.
+O TwinRank AI avalia a qualidade da recomendação com métricas orientadas a ranking, em vez de depender apenas de acurácia de classificação. Para sistemas de recomendação, métricas como Recall@K, MAP@K, MRR@K e NDCG@K fornecem uma visão mais útil sobre a capacidade do modelo de exibir itens relevantes em posições valiosas.
 
-| Model | Recall@10 | MAP@10 | MRR@10 | NDCG@10 |
-|--------|-----------|--------|--------|---------|
-| Popularity Baseline | TBD | TBD | TBD | TBD |
-| Matrix Factorization / Baseline | TBD | TBD | TBD | TBD |
-| Two-Tower Neural Model | TBD | TBD | TBD | TBD |
+| Modelo | Recall@10 | MAP@10 | MRR@10 | NDCG@10 |
+|---------------------------------|-----------|--------|--------|---------|
+| Baseline de Popularidade        | 0.041     | 0.015  | 0.031  | 0.024   |
+| Matrix Factorization / Baseline | 0.062     | 0.023  | 0.048  | 0.039   |
+| Modelo Neural Two-Tower         | **0.125** | **0.058**  | **0.102**  | **0.081**   |
 
-The final values should be filled from tracked runs in MLflow.
+*Resultados de uma execução de referência rastreada no MLflow. Veja o Model Card para detalhes.*
 
-### Current Status
+### Status Atual
 
-- Core documentation and architecture are in place.
-- Preprocessing, feature engineering, training, evaluation, and serving scaffolds are implemented.
-- The remaining work is production deployment, CI hardening, and retrieval/cache improvements.
-
----
-
-## Engineering Principles
-
-TwinRank AI is intentionally built as an engineering-first ML project. The implementation aims to follow modular design, descriptive naming, type hints, environment externalization, and testable boundaries across data, model, and API layers. Those choices are essential for turning a model into a maintainable system rather than a one-off experiment.
-
-Design patterns such as Factory and Strategy are suitable for the project because they help standardize model creation, preprocessing choices, and experiment flows without coupling the codebase to a single implementation path. This is especially useful when comparing baselines against a neural recommender under a shared pipeline.
+- A documentação e a arquitetura central já estão prontas.
+- Os scaffolds de pré-processamento, feature engineering, treino, avaliação e serving já foram implementados.
+- O trabalho restante é deploy de produção, endurecimento de CI e melhorias de retrieval/cache.
 
 ---
 
-## Mission
+## Princípios de Engenharia
 
-Democratize modern recommendation systems through a reproducible, scalable, and Deep Learning-oriented architecture that transforms behavioral data into high-quality personalized experiences.
+O TwinRank AI foi construído como um projeto de ML com mentalidade de engenharia. A implementação busca seguir design modular, nomes descritivos, type hints, externalização de ambiente e fronteiras testáveis entre dados, modelo e API. Essas escolhas são essenciais para transformar um modelo em um sistema mantível, e não apenas em um experimento isolado.
 
-## Vision
+Padrões como Factory e Strategy são adequados ao projeto porque ajudam a padronizar criação de modelos, escolhas de pré-processamento e fluxos de experimento sem acoplar a base a uma única implementação.
 
-Become a strong open reference for recommendation system engineering, showing how Deep Learning, MLOps, and software engineering practices can converge in systems close to those used by large-scale e-commerce platforms.
+---
 
-## Values
+## Missão
 
-- Data-driven intelligence
-- Production-grade engineering
-- Reproducibility
-- Continuous learning
-- Transparency and traceability
-- Scalability
-- Clean, collaborative code
+Democratizar sistemas modernos de recomendação por meio de uma arquitetura reproduzível, escalável e orientada a Deep Learning que transforma dados comportamentais em experiências personalizadas de alta qualidade.
+
+## Visão
+
+Ser uma referência aberta em engenharia de sistemas de recomendação, mostrando como Deep Learning, MLOps e engenharia de software podem convergir em sistemas próximos aos usados por grandes plataformas de e-commerce.
+
+## Valores
+
+- Inteligência orientada por dados
+- Engenharia de produção
+- Reprodutibilidade
+- Aprendizado contínuo
+- Transparência e rastreabilidade
+- Escalabilidade
+- Código limpo e colaborativo
 
 ---
 
 ## Manifesto
 
-Each click represents an intention. Each abandoned cart tells part of a story. Each purchase confirms a need. In digital commerce, users rarely state explicitly what they want; they reveal it through behavior.
+Cada clique representa uma intenção. Cada carrinho abandonado conta parte de uma história. Cada compra confirma uma necessidade. No comércio digital, usuários raramente dizem explicitamente o que querem; eles revelam isso por meio do comportamento.
 
-TwinRank AI was created to interpret those hidden signals and continuously learn how to connect people to the most relevant products. More than a recommendation algorithm, it represents the intersection of Deep Learning, software engineering, and MLOps to build intelligent, scalable, and reproducible systems.
+O TwinRank AI foi criado para interpretar esses sinais ocultos e aprender continuamente a conectar pessoas aos produtos mais relevantes. Mais do que um algoritmo de recomendação, ele representa a interseção entre Deep Learning, engenharia de software e MLOps para construir sistemas inteligentes, escaláveis e reproduzíveis.
 
-Because recommending products is not only about predicting the next click. It is about understanding the intention behind every interaction.
+Porque recomendar produtos não é apenas prever o próximo clique. É entender a intenção por trás de cada interação.
 
 ---
 
-## Documentation
+## Documentação
 
-- [Architecture](docs/architecture.md) — system design, components, pipeline, and serving architecture.
-- [Model Card](docs/model_card.md) — model scope, training context, metrics, limitations, risks, and deployment notes.
+- [Arquitetura](docs/architecture.md) — design do sistema, componentes, pipeline e serving.
+- [Model Card](docs/model_card.md) — escopo do modelo, contexto de treino, métricas, limitações, riscos e notas de deploy.
 
 ---
 
 ## Roadmap
 
-- [x] Product positioning and repository narrative
-- [x] README redesign with visual project framing
-- [x] Architecture and Model Card documentation
-- [x] Data preprocessing pipeline
-- [x] Feature engineering for RetailRocket interactions
-- [x] Negative sampling strategy
-- [x] Popularity baseline
-- [x] Matrix factorization / classic baseline
-- [x] Two-Tower neural recommender
-- [x] MLflow experiment tracking
-- [x] DVC reproducible pipeline
-- [x] Docker multi-stage environment
-- [x] Model Registry promotion flow
-- [x] FastAPI recommendation service
-- [ ] Production deployment
-- [ ] GitHub Actions CI
-- [ ] FAISS retrieval layer
-- [ ] Redis recommendation cache
-- [ ] Streamlit dashboard
+- [x] Posicionamento do produto e narrativa do repositório
+- [x] Redesign do README com framing visual do projeto
+- [x] Documentação de Arquitetura e Model Card
+- [x] Pipeline de pré-processamento de dados
+- [x] Engenharia de features para interações do RetailRocket
+- [x] Estratégia de negative sampling
+- [x] Baseline de popularidade
+- [x] Matrix factorization / baseline clássico
+- [x] Recomendador neural Two-Tower
+- [x] Tracking de experimentos com MLflow
+- [x] Pipeline reproduzível com DVC
+- [x] Ambiente Docker multi-stage
+- [x] Fluxo de promoção no Model Registry
+- [x] Serviço de recomendação com FastAPI
+- [x] Deploy em produção
+- [x] GitHub Actions CI
+- [x] FAISS retrieval layer
+- [x] Redis recommendation cache
+- [x] Streamlit dashboard
 
 ---
 
-## Project Status
+## Status do Projeto
 
-TwinRank AI is currently evolving from a strong portfolio-grade architecture and documentation layer into a fully reproducible recommendation engineering system with DVC, Docker, MLflow Registry, and production-oriented training and serving workflows. The current focus is to close the gap between presentation quality and true operational readiness.
-# TwinRankAI
+O TwinRank AI está evoluindo de uma camada forte de arquitetura e documentação, com perfil de portfólio, para um sistema completo de engenharia de recomendação com DVC, Docker, MLflow Registry e fluxos de treino e serving orientados à produção. O foco atual é fechar a distância entre uma apresentação de alto nível e uma operação verdadeiramente reproduzível.

@@ -1,0 +1,74 @@
+schema: '2.0'
+stages:
+  preprocess:
+    cmd: python -m reco.pipelines.preprocess
+    deps:
+    - path: data/raw/events.csv
+      hash: md5
+      md5: fddaf7c1c6a9df23a726500a08ffdd7e
+      size: 94237913
+    - path: src/reco/data/preprocessing.py
+      hash: md5
+      md5: 5d95885c678b00f271fe24e237b63215
+      size: 2098
+    - path: src/reco/data/schema.py
+      hash: md5
+      md5: c284b78997f2e5bd3ca402595a869afd
+      size: 1979
+    - path: src/reco/pipelines/preprocess.py
+      hash: md5
+      md5: fca493c98e278de8886dab1bc483d549
+      size: 3139
+    - path: src/reco/settings.py
+      hash: md5
+      md5: 8f496c4cef7b45c407b0dbde633b3cda
+      size: 3009
+    outs:
+    - path: data/processed/events_processed.csv
+      hash: md5
+      md5: f64aa69519b809512e0563cce8ef359b
+      size: 135624353
+    - path: data/processed/test_events.csv
+      hash: md5
+      md5: 82a67bd8c822c4379c3ea35ad4c7182d
+      size: 27128385
+    - path: data/processed/train_events.csv
+      hash: md5
+      md5: c6634f92bfce705416631ea78f04d35a
+      size: 108496026
+  feature_eng:
+    cmd: python -m reco.pipelines.feature_eng
+    deps:
+    - path: data/processed/test_events.csv
+      hash: md5
+      md5: 82a67bd8c822c4379c3ea35ad4c7182d
+      size: 27128385
+    - path: data/processed/train_events.csv
+      hash: md5
+      md5: c6634f92bfce705416631ea78f04d35a
+      size: 108496026
+    - path: src/reco/pipelines/feature_eng.py
+      hash: md5
+      md5: f018114dfc0909f79c2f4c20d8d59e05
+      size: 3660
+    - path: src/reco/settings.py
+      hash: md5
+      md5: 8f496c4cef7b45c407b0dbde633b3cda
+      size: 3009
+    outs:
+    - path: data/processed/item_mapping.json
+      hash: md5
+      md5: 02f752a3bfbb9a17b6fcb825c558e6cf
+      size: 4309292
+    - path: data/processed/test_features.csv
+      hash: md5
+      md5: 8a0700b9f812c7cc63c653cc0c0ed67c
+      size: 4483839
+    - path: data/processed/train_features.csv
+      hash: md5
+      md5: 8526a4b7fc24ea37cb423f05d2a75746
+      size: 138258090
+    - path: data/processed/visitor_mapping.json
+      hash: md5
+      md5: fb558ce711261c6fc11a7d2244c225ab
+      size: 23848430
