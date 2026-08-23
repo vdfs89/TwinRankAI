@@ -11,7 +11,11 @@ import pandas as pd  # type: ignore[import-untyped]
 
 from reco.models.factory import ModelType, create_model
 from reco.settings import Settings
-from reco.training.evaluate import evaluate_model
+from reco.training.evaluate import (
+    build_relevance_lookup,
+    evaluate_model,
+    filter_lookup_by_history,
+)
 from reco.training.mlflow_utils import configure_mlflow
 
 
@@ -21,21 +25,17 @@ def _load_dataframe(path: Path) -> pd.DataFrame:
     return pd.read_csv(path, parse_dates=["timestamp"])
 
 
-def _build_lookup(test_events: pd.DataFrame) -> dict[int, dict[int, float]]:
-    lookup: dict[int, dict[int, float]] = {}
-    for visitor_id, group in test_events.groupby("visitorid"):
-        lookup[int(visitor_id)] = {
-            int(row.itemid): float(row.relevance) for row in group.itertuples(index=False)
-        }
-    return lookup
-
-
 def run(settings: Settings) -> Path:  # noqa: D103
     configure_mlflow(settings)
 
+    train_path = settings.processed_data_dir / "train_features.csv"
     test_path = settings.processed_data_dir / "test_features.csv"
+    train_events = _load_dataframe(train_path)
     test_events = _load_dataframe(test_path)
-    lookup = _build_lookup(test_events)
+
+    # C1: mesmo critério de população do treino (ver reco.training.evaluate).
+    full_lookup = build_relevance_lookup(test_events)
+    lookup, eval_audit = filter_lookup_by_history(full_lookup, train_events)
 
     all_metrics = {}
 
@@ -48,6 +48,7 @@ def run(settings: Settings) -> Path:  # noqa: D103
         all_metrics[model_type.value] = metrics
 
         with mlflow.start_run(run_name=f"evaluate_{model_type.value}"):
+            mlflow.log_params(eval_audit)
             mlflow.log_metrics(metrics)
 
     reports_dir = Path("reports")

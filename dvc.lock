@@ -9,20 +9,20 @@ stages:
       size: 94237913
     - path: src/reco/data/preprocessing.py
       hash: md5
-      md5: 5d95885c678b00f271fe24e237b63215
-      size: 2098
+      md5: 01e7c5fc6bb0ec29336e7e94eeaac29c
+      size: 2126
     - path: src/reco/data/schema.py
       hash: md5
-      md5: c284b78997f2e5bd3ca402595a869afd
-      size: 1979
+      md5: ac7a96ac9363eb0ff5873801e912c201
+      size: 2021
     - path: src/reco/pipelines/preprocess.py
       hash: md5
-      md5: fca493c98e278de8886dab1bc483d549
-      size: 3139
+      md5: cada5059431382285a6d8cf8a843f806
+      size: 3205
     - path: src/reco/settings.py
       hash: md5
-      md5: 8f496c4cef7b45c407b0dbde633b3cda
-      size: 3009
+      md5: 9b638d965b687c74aba4489bdc737930
+      size: 3453
     outs:
     - path: data/processed/events_processed.csv
       hash: md5
@@ -49,12 +49,12 @@ stages:
       size: 108496026
     - path: src/reco/pipelines/feature_eng.py
       hash: md5
-      md5: f018114dfc0909f79c2f4c20d8d59e05
-      size: 3660
+      md5: 818eacc5ced6f6298c9b15901e5ac12b
+      size: 3714
     - path: src/reco/settings.py
       hash: md5
-      md5: 8f496c4cef7b45c407b0dbde633b3cda
-      size: 3009
+      md5: 9b638d965b687c74aba4489bdc737930
+      size: 3453
     outs:
     - path: data/processed/item_mapping.json
       hash: md5
@@ -72,3 +72,111 @@ stages:
       hash: md5
       md5: fb558ce711261c6fc11a7d2244c225ab
       size: 23848430
+  train:
+    cmd: python -m reco.training.train
+    deps:
+    - path: data/processed/test_features.csv
+      hash: md5
+      md5: 8a0700b9f812c7cc63c653cc0c0ed67c
+      size: 4483839
+    - path: data/processed/train_features.csv
+      hash: md5
+      md5: 8526a4b7fc24ea37cb423f05d2a75746
+      size: 138258090
+    - path: src/reco/models/base.py
+      hash: md5
+      md5: 5c5e842113c43df85c16ef996634e5a7
+      size: 894
+    - path: src/reco/models/baseline.py
+      hash: md5
+      md5: 2f5036ad84c107c946c8d8e825761fe0
+      size: 4377
+    - path: src/reco/models/factory.py
+      hash: md5
+      md5: c7e1afa570e5627ac25da9f54b638181
+      size: 1239
+    - path: src/reco/models/two_tower.py
+      hash: md5
+      md5: 4c83bfe51ea87fdebab6d522fa91464f
+      size: 12197
+    - path: src/reco/settings.py
+      hash: md5
+      md5: 9b638d965b687c74aba4489bdc737930
+      size: 3453
+    - path: src/reco/training/evaluate.py
+      hash: md5
+      md5: 7dbc49077444f8b54cbc1f8b4b4f3850
+      size: 5476
+    - path: src/reco/training/mlflow_utils.py
+      hash: md5
+      md5: 088845d1a986752814af6ae653db3345
+      size: 955
+    - path: src/reco/training/train.py
+      hash: md5
+      md5: f198af9c21ec2fc400cc5290b77438dc
+      size: 4782
+    outs:
+    - path: models/matrix_factorization/model.joblib
+      hash: md5
+      md5: caef0f6cee19736b7c04839aa65bef9e
+      size: 716206382
+    - path: models/popularity/model.joblib
+      hash: md5
+      md5: a00017262c3760abbb6b6392bee1ad5f
+      size: 1005034
+    - path: models/two_tower/item_index.faiss
+      hash: md5
+      md5: 4069fc7fb137f2babe9b5e77a12d558d
+      size: 20606765
+    - path: models/two_tower/model.joblib
+      hash: md5
+      md5: 96a41ba5d13919414f5782879c871df3
+      size: 34866005
+  evaluate:
+    cmd: python -m reco.pipelines.evaluate
+    deps:
+    - path: data/processed/test_features.csv
+      hash: md5
+      md5: 8a0700b9f812c7cc63c653cc0c0ed67c
+      size: 4483839
+    - path: data/processed/train_features.csv
+      hash: md5
+      md5: 8526a4b7fc24ea37cb423f05d2a75746
+      size: 138258090
+    - path: models/matrix_factorization/model.joblib
+      hash: md5
+      md5: caef0f6cee19736b7c04839aa65bef9e
+      size: 716206382
+    - path: models/popularity/model.joblib
+      hash: md5
+      md5: a00017262c3760abbb6b6392bee1ad5f
+      size: 1005034
+    - path: models/two_tower/model.joblib
+      hash: md5
+      md5: 96a41ba5d13919414f5782879c871df3
+      size: 34866005
+    - path: src/reco/models/factory.py
+      hash: md5
+      md5: c7e1afa570e5627ac25da9f54b638181
+      size: 1239
+    - path: src/reco/pipelines/evaluate.py
+      hash: md5
+      md5: 5b52d87a3547eb9f9717f047e77d745a
+      size: 2275
+    - path: src/reco/settings.py
+      hash: md5
+      md5: 9b638d965b687c74aba4489bdc737930
+      size: 3453
+    - path: src/reco/training/evaluate.py
+      hash: md5
+      md5: 7dbc49077444f8b54cbc1f8b4b4f3850
+      size: 5476
+    - path: src/reco/training/evaluate.py
+      hash: md5
+      md5: 7dbc49077444f8b54cbc1f8b4b4f3850
+      size: 5476
+    outs:
+    - path: reports/metrics.json
+      hash: md5
+      md5: 7368a28c8cafd5c26edbf7fdd0031fb7
+      size: 708

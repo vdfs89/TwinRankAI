@@ -6,10 +6,10 @@ variável obrigatória estiver ausente ou com tipo incorreto.
 
 from pathlib import Path
 
-from pydantic import Field
 from pydantic.v1 import (  # type: ignore[attr-defined]
     BaseSettings as PydanticBaseSettings,
 )
+from pydantic.v1 import Field  # type: ignore[attr-defined]
 
 
 class Settings(PydanticBaseSettings):
@@ -59,6 +59,7 @@ class Settings(PydanticBaseSettings):
         default=5,
         env="EARLY_STOPPING_PATIENCE",
     )
+    dataloader_workers: int = Field(default=4, env="DATALOADER_WORKERS")
 
     # Avaliação
     top_k: int = Field(default=10, env="TOP_K")

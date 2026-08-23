@@ -76,13 +76,27 @@ class MatrixFactorizationRecommender:
         return [self._index_to_item[i] for i in top_indices]
 
     def save(self, path: str) -> None:
-        """Save latent factors to disk."""
+        """Salva fatores latentes e os índices visitor/item.
+
+        Os índices são obrigatórios: sem eles, `predict_top_k` não consegue
+        mapear um visitorid externo para a linha correta de `_visitor_factors`
+        e retorna lista vazia para todo usuário após um `load`.
+        """
         joblib.dump(
-            {"visitor_factors": self._visitor_factors, "item_factors": self._item_factors}, path
+            {
+                "visitor_factors": self._visitor_factors,
+                "item_factors": self._item_factors,
+                "visitor_index": self._visitor_index,
+                "item_index": self._item_index,
+            },
+            path,
         )
 
     def load(self, path: str) -> None:
-        """Carrega os fatores latentes do disco."""
+        """Carrega os fatores latentes e os índices visitor/item do disco."""
         data = joblib.load(path)
         self._visitor_factors = data["visitor_factors"]
         self._item_factors = data["item_factors"]
+        self._visitor_index = data["visitor_index"]
+        self._item_index = data["item_index"]
+        self._index_to_item = {i: it for it, i in self._item_index.items()}

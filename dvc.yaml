@@ -40,6 +40,7 @@ stages:
       - data/processed/test_features.csv
     outs:
       - models/two_tower/model.joblib
+      - models/two_tower/item_index.faiss
       - models/popularity/model.joblib
       - models/matrix_factorization/model.joblib
 
@@ -50,6 +51,8 @@ stages:
       - src/reco/training/evaluate.py
       - src/reco/models/factory.py
       - src/reco/settings.py
+      - src/reco/training/evaluate.py
+      - data/processed/train_features.csv
       - data/processed/test_features.csv
       - models/two_tower/model.joblib
       - models/popularity/model.joblib

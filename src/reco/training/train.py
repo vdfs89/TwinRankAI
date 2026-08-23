@@ -14,7 +14,11 @@ from reco.pipelines.feature_eng import run as run_feature_engineering
 from reco.pipelines.preprocess import PreprocessArtifacts
 from reco.pipelines.preprocess import run as run_preprocess
 from reco.settings import Settings, get_settings
-from reco.training.evaluate import evaluate_model
+from reco.training.evaluate import (
+    build_relevance_lookup,
+    evaluate_model,
+    filter_lookup_by_history,
+)
 from reco.training.mlflow_utils import configure_mlflow, log_and_register_model
 from reco.utils.logging import get_logger
 
@@ -35,17 +39,6 @@ def _load_dataframe(path: Path) -> pd.DataFrame:
     return pd.read_csv(path, parse_dates=["timestamp"])
 
 
-def _build_test_lookup(
-    test_events: pd.DataFrame,
-) -> dict[int, dict[int, float]]:
-    lookup: dict[int, dict[int, float]] = {}
-    for visitor_id, group in test_events.groupby("visitorid"):
-        lookup[int(visitor_id)] = {
-            int(row.itemid): float(row.relevance) for row in group.itertuples(index=False)
-        }
-    return lookup
-
-
 def _artifact_path(settings: Settings, model_type: ModelType) -> Path:
     model_dir = settings.models_dir / model_type.value
     model_dir.mkdir(parents=True, exist_ok=True)
@@ -60,11 +53,15 @@ def _run_single_experiment(
 ) -> TrainingRunResult:
     configure_mlflow(settings)
     model = create_model(model_type, settings)
-    test_lookup = _build_test_lookup(test_events)
+    # C1: avalia só quem tem histórico de treino suficiente — mesmo critério
+    # usado para filtrar a população de treino do two-tower.
+    full_lookup = build_relevance_lookup(test_events)
+    test_lookup, eval_audit = filter_lookup_by_history(full_lookup, train_events)
 
     with mlflow.start_run(run_name=model_type.value) as run:
         mlflow.log_params(
             {
+                **eval_audit,
                 "model_type": model_type.value,
                 "embedding_dim": settings.embedding_dim,
                 "learning_rate": settings.learning_rate,

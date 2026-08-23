@@ -5,8 +5,55 @@ usamos métricas de ranking top-K: Recall, NDCG, MRR e MAP.
 """
 
 import numpy as np
+import pandas as pd
 
 from reco.models.base import RecommenderModel
+
+# Critério único de população, compartilhado entre treino e avaliação:
+# só visitantes com pelo menos este número de interações no TREINO entram.
+# Sem ele, 57% dos visitantes avaliados têm 1 única interação de treino e
+# dominam a média, tornando a métrica incomparável com a literatura.
+MIN_TRAIN_INTERACTIONS = 5
+
+
+def build_relevance_lookup(test_events: pd.DataFrame) -> dict[int, dict[int, float]]:
+    """Monta {visitor_id: {item_id: relevancia}} a partir dos eventos de teste.
+
+    Pares (visitor, item) repetidos são deduplicados pela relevância MÁXIMA:
+    se o usuário deu `view` (1.0) e depois `transaction` (5.0) no mesmo item,
+    o par vale 5.0. Antes desta correção prevalecia a última linha lida, o que
+    podia rebaixar uma compra a uma visualização no cálculo do NDCG.
+    """
+    grouped = test_events.groupby(["visitorid", "itemid"])["relevance"].max()
+    lookup: dict[int, dict[int, float]] = {}
+    for (visitor_id, item_id), relevance in grouped.items():
+        lookup.setdefault(int(visitor_id), {})[int(item_id)] = float(relevance)
+    return lookup
+
+
+def eligible_visitors(
+    train_events: pd.DataFrame,
+    min_interactions: int = MIN_TRAIN_INTERACTIONS,
+) -> set[int]:
+    """Visitantes com histórico de treino suficiente para serem modelados/avaliados."""
+    counts = train_events.groupby("visitorid")["itemid"].nunique()
+    return {int(v) for v in counts[counts >= min_interactions].index}
+
+
+def filter_lookup_by_history(
+    lookup: dict[int, dict[int, float]],
+    train_events: pd.DataFrame,
+    min_interactions: int = MIN_TRAIN_INTERACTIONS,
+) -> tuple[dict[int, dict[int, float]], dict[str, int]]:
+    """Restringe o lookup aos visitantes elegíveis; devolve também a auditoria."""
+    eligible = eligible_visitors(train_events, min_interactions)
+    filtered = {v: rel for v, rel in lookup.items() if v in eligible}
+    audit = {
+        "eval_min_train_interactions": min_interactions,
+        "eval_visitors_before_filter": len(lookup),
+        "eval_visitors_after_filter": len(filtered),
+    }
+    return filtered, audit
 
 
 def recall_at_k(recommended: list[int], relevant: set[int], k: int) -> float:

@@ -13,30 +13,35 @@ from torch import nn
 from torch.utils.data import DataLoader, Dataset
 
 from reco.settings import Settings
+from reco.training.evaluate import MIN_TRAIN_INTERACTIONS, eligible_visitors
 from reco.utils.logging import get_logger
 
 logger = get_logger(__name__)
 
 
 class _InteractionDataset(Dataset):
-    """Dataset de pares (visitor, item, label) com negative sampling on-the-fly."""
+    """Dataset de pares (visitor, item, label, peso) com negative sampling on-the-fly."""
 
     def __init__(
         self,
         visitor_ids: np.ndarray,
         item_ids: np.ndarray,
+        relevances: np.ndarray,
         n_items: int,
         n_negatives: int,
     ) -> None:
         self._visitor_ids = visitor_ids
         self._item_ids = item_ids
+        self._relevances = relevances
         self._n_items = n_items
         self._n_negatives = n_negatives
 
     def __len__(self) -> int:
         return len(self._visitor_ids)
 
-    def __getitem__(self, idx: int) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def __getitem__(
+        self, idx: int
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
         visitor = self._visitor_ids[idx]
         pos_item = self._item_ids[idx]
         neg_items = np.random.randint(0, self._n_items, size=self._n_negatives)
@@ -44,11 +49,18 @@ class _InteractionDataset(Dataset):
         visitors = np.full(1 + self._n_negatives, visitor)
         items = np.concatenate([[pos_item], neg_items])
         labels = np.concatenate([[1.0], np.zeros(self._n_negatives)])
+        # C3: o positivo carrega o peso do feedback implícito
+        # (view=1.0 / addtocart=3.0 / transaction=5.0); negativos amostrados
+        # valem 1.0. Aplicado como peso por amostra na BCE — abordagem mais
+        # simples e correta que pos_weight, que é global por classe e não
+        # distinguiria uma compra de uma visualização.
+        weights = np.concatenate([[self._relevances[idx]], np.ones(self._n_negatives)])
 
         return (
             torch.tensor(visitors, dtype=torch.long),
             torch.tensor(items, dtype=torch.long),
             torch.tensor(labels, dtype=torch.float32),
+            torch.tensor(weights, dtype=torch.float32),
         )
 
 
@@ -57,8 +69,11 @@ class _TwoTowerNet(nn.Module):
 
     def __init__(self, n_visitors: int, n_items: int, embedding_dim: int) -> None:
         super().__init__()
-        self.user_tower = nn.Embedding(n_visitors, embedding_dim)
-        self.item_tower = nn.Embedding(n_items, embedding_dim)
+        # sparse=True: o gradiente de cada batch toca só as linhas usadas.
+        # Combinado com SparseAdam, evita que o otimizador atualize densamente
+        # os ~85M parâmetros a cada step (causa raiz das 11,5h de treino).
+        self.user_tower = nn.Embedding(n_visitors, embedding_dim, sparse=True)
+        self.item_tower = nn.Embedding(n_items, embedding_dim, sparse=True)
         nn.init.normal_(self.user_tower.weight, std=0.01)
         nn.init.normal_(self.item_tower.weight, std=0.01)
 
@@ -83,25 +98,49 @@ class TwoTowerRecommender:
         self._device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def fit(self, train_events: pd.DataFrame) -> None:
-        """Treina o two-tower com BCE + negative sampling e early stopping."""
+        """Treina o two-tower com BCE ponderada + negative sampling e early stopping."""
         torch.manual_seed(self._settings.random_seed)
+        np.random.seed(self._settings.random_seed)
 
-        visitors = train_events["visitorid"].unique()
-        items = train_events["itemid"].unique()
+        # C5: treina apenas visitantes com histórico mínimo. Um embedding de ID
+        # aprendido a partir de 1 única interação fica praticamente na
+        # inicialização — só infla a matriz de parâmetros e o tempo de treino.
+        # Mesmo critério aplicado na avaliação (reco.training.evaluate).
+        eligible = eligible_visitors(train_events, MIN_TRAIN_INTERACTIONS)
+        filtered_events = train_events[train_events["visitorid"].isin(eligible)]
+        logger.info(
+            "populacao_de_treino_filtrada",
+            min_interacoes=MIN_TRAIN_INTERACTIONS,
+            visitors_antes=int(train_events["visitorid"].nunique()),
+            visitors_depois=int(filtered_events["visitorid"].nunique()),
+            eventos_antes=len(train_events),
+            eventos_depois=len(filtered_events),
+        )
+
+        visitors = filtered_events["visitorid"].unique()
+        items = filtered_events["itemid"].unique()
         self._visitor_index = {v: i for i, v in enumerate(visitors)}
         self._item_index = {it: i for i, it in enumerate(items)}
         self._index_to_item = {i: it for it, i in self._item_index.items()}
 
-        visitor_ids = train_events["visitorid"].map(self._visitor_index).to_numpy()
-        item_ids = train_events["itemid"].map(self._item_index).to_numpy()
+        visitor_ids = filtered_events["visitorid"].map(self._visitor_index).to_numpy()
+        item_ids = filtered_events["itemid"].map(self._item_index).to_numpy()
+        relevances = filtered_events["relevance"].to_numpy(dtype=np.float32)
 
         dataset = _InteractionDataset(
             visitor_ids=visitor_ids,
             item_ids=item_ids,
+            relevances=relevances,
             n_items=len(items),
             n_negatives=self._settings.negative_samples_per_positive,
         )
-        loader = DataLoader(dataset, batch_size=self._settings.batch_size, shuffle=True)
+        loader = DataLoader(
+            dataset,
+            batch_size=self._settings.batch_size,
+            shuffle=True,
+            num_workers=self._settings.dataloader_workers,
+            persistent_workers=self._settings.dataloader_workers > 0,
+        )
 
         self._net = _TwoTowerNet(
             n_visitors=len(visitors),
@@ -109,8 +148,14 @@ class TwoTowerRecommender:
             embedding_dim=self._settings.embedding_dim,
         ).to(self._device)
 
-        optimizer = torch.optim.Adam(self._net.parameters(), lr=self._settings.learning_rate)
-        criterion = nn.BCEWithLogitsLoss()
+        # SparseAdam: único otimizador Adam-like que aceita gradiente esparso.
+        # Não suporta weight_decay nem amsgrad — a regularização aqui vem do
+        # negative sampling e do early stopping.
+        optimizer = torch.optim.SparseAdam(
+            list(self._net.parameters()), lr=self._settings.learning_rate
+        )
+        # reduction="none" para poder ponderar cada amostra pela relevância (C3).
+        criterion = nn.BCEWithLogitsLoss(reduction="none")
 
         best_loss = float("inf")
         patience_counter = 0
@@ -157,14 +202,17 @@ class TwoTowerRecommender:
         total_loss = 0.0
         n_batches = 0
 
-        for visitors_batch, items_batch, labels_batch in loader:
+        for visitors_batch, items_batch, labels_batch, weights_batch in loader:
             visitors_batch = visitors_batch.view(-1).to(self._device)
             items_batch = items_batch.view(-1).to(self._device)
             labels_batch = labels_batch.view(-1).to(self._device)
+            weights_batch = weights_batch.view(-1).to(self._device)
 
             optimizer.zero_grad()
             logits = self._net(visitors_batch, items_batch)
-            loss = criterion(logits, labels_batch)
+            # C3: média ponderada — uma transaction pesa 5x uma view.
+            per_sample = criterion(logits, labels_batch)
+            loss = (per_sample * weights_batch).sum() / weights_batch.sum()
             loss.backward()
             optimizer.step()
 
@@ -214,7 +262,10 @@ class TwoTowerRecommender:
 
     def load(self, path: str) -> None:
         """Carrega pesos do modelo e os índices visitor/item."""
-        checkpoint = torch.load(path, map_location=self._device)
+        # weights_only=False: o checkpoint carrega também os dicionários de
+        # índice visitor/item (não só tensores), e o default do torch >= 2.6
+        # os rejeitaria. O artefato é produzido pelo próprio pipeline.
+        checkpoint = torch.load(path, map_location=self._device, weights_only=False)
         self._visitor_index = checkpoint["visitor_index"]
         self._item_index = checkpoint["item_index"]
         self._index_to_item = {i: it for it, i in self._item_index.items()}
