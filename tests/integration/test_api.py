@@ -36,6 +36,20 @@ def eligible_visitor_id() -> int:
     return int(next(iter(visitor_index)))
 
 
+@pytest.fixture(scope="module")
+def popularity_checkpoint() -> None:
+    """Pula o teste quando o baseline de popularidade não está em disco.
+
+    Mesmo critério de `eligible_visitor_id`: o CI roda sem artefatos versionados
+    (só o ponteiro DVC), então testes que dependem de um modelo treinado são
+    pulados em vez de falharem.
+    """
+    settings = get_settings()
+    fallback_path = settings.models_dir / "popularity" / "model.joblib"
+    if not fallback_path.exists():
+        pytest.skip(f"baseline ausente em {fallback_path}; rode 'dvc repro train'")
+
+
 def test_health_retorna_ok(client: TestClient) -> None:
     """/health responde 200 com status ok."""
     response = client.get("/health")
@@ -58,7 +72,9 @@ def test_recommend_visitante_real_retorna_itens(
     assert all(isinstance(item_id, int) for item_id in body["item_ids"])
 
 
-def test_recommend_cold_start_cai_no_fallback(client: TestClient) -> None:
+def test_recommend_cold_start_cai_no_fallback(
+    client: TestClient, popularity_checkpoint: None
+) -> None:
     """Visitante fora do índice recebe o ranking de popularidade, não um erro."""
     response = client.get("/recommend/999999999", params={"top_k": 5})
 
@@ -66,6 +82,20 @@ def test_recommend_cold_start_cai_no_fallback(client: TestClient) -> None:
     body = response.json()
     assert body["strategy"] == "popularity_fallback"
     assert len(body["item_ids"]) == 5
+
+
+def test_recommend_cold_start_nunca_falha_sem_checkpoint(client: TestClient) -> None:
+    """Sem nenhum checkpoint, o cold-start ainda responde 200 com `unavailable`.
+
+    Complementa o teste acima: aquele exige o baseline em disco e é pulado no
+    CI, onde não há artefatos. Este roda em qualquer ambiente e garante o que
+    de fato não pode regredir — a rota nunca devolve 500 para um visitante
+    desconhecido.
+    """
+    response = client.get("/recommend/999999999", params={"top_k": 5})
+
+    assert response.status_code == 200
+    assert response.json()["strategy"] in {"popularity_fallback", "unavailable"}
 
 
 @pytest.mark.parametrize("top_k", [0, 101])
