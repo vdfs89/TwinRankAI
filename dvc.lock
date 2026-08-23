@@ -89,8 +89,8 @@ stages:
       size: 894
     - path: src/reco/models/baseline.py
       hash: md5
-      md5: 2f5036ad84c107c946c8d8e825761fe0
-      size: 4377
+      md5: ebff8f60889234ea4cd1aaa04f366c7d
+      size: 4374
     - path: src/reco/models/factory.py
       hash: md5
       md5: c7e1afa570e5627ac25da9f54b638181
@@ -105,8 +105,8 @@ stages:
       size: 3453
     - path: src/reco/training/evaluate.py
       hash: md5
-      md5: 7dbc49077444f8b54cbc1f8b4b4f3850
-      size: 5476
+      md5: 4cc46e82c81cea883ead8591aa7cb1dc
+      size: 6796
     - path: src/reco/training/mlflow_utils.py
       hash: md5
       md5: 088845d1a986752814af6ae653db3345
@@ -161,22 +161,22 @@ stages:
       size: 1239
     - path: src/reco/pipelines/evaluate.py
       hash: md5
-      md5: 5b52d87a3547eb9f9717f047e77d745a
-      size: 2275
+      md5: 13a699b6d4a71ad09be7135da272c9a8
+      size: 2849
     - path: src/reco/settings.py
       hash: md5
       md5: 9b638d965b687c74aba4489bdc737930
       size: 3453
     - path: src/reco/training/evaluate.py
       hash: md5
-      md5: 7dbc49077444f8b54cbc1f8b4b4f3850
-      size: 5476
+      md5: 4cc46e82c81cea883ead8591aa7cb1dc
+      size: 6796
     - path: src/reco/training/evaluate.py
       hash: md5
-      md5: 7dbc49077444f8b54cbc1f8b4b4f3850
-      size: 5476
+      md5: 4cc46e82c81cea883ead8591aa7cb1dc
+      size: 6796
     outs:
     - path: reports/metrics.json
       hash: md5
-      md5: 7368a28c8cafd5c26edbf7fdd0031fb7
-      size: 708
+      md5: 68da1246e8be5d39b41f991974fa7201
+      size: 857

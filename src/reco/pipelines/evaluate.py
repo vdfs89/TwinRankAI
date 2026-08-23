@@ -14,7 +14,9 @@ from reco.settings import Settings
 from reco.training.evaluate import (
     build_relevance_lookup,
     evaluate_model,
+    evaluate_novel_recall_at_k,
     filter_lookup_by_history,
+    train_items_by_visitor,
 )
 from reco.training.mlflow_utils import configure_mlflow
 
@@ -36,6 +38,7 @@ def run(settings: Settings) -> Path:  # noqa: D103
     # C1: mesmo critério de população do treino (ver reco.training.evaluate).
     full_lookup = build_relevance_lookup(test_events)
     lookup, eval_audit = filter_lookup_by_history(full_lookup, train_events)
+    train_items = train_items_by_visitor(train_events)
 
     all_metrics = {}
 
@@ -45,6 +48,14 @@ def run(settings: Settings) -> Path:  # noqa: D103
         model.load(str(model_file))
 
         metrics = evaluate_model(model, lookup, settings.top_k)
+        # Métrica secundária: descoberta pura, exclui repetição de itens já
+        # vistos no treino (ver evaluate_novel_recall_at_k). Calculada para
+        # os 3 modelos para saber se a vantagem do two-tower é descoberta
+        # real ou só repetir itens conhecidos com mais precisão.
+        metrics[f"recall_at_{settings.top_k}_novel"] = evaluate_novel_recall_at_k(
+            model, lookup, train_items, settings.top_k
+        )
+
         all_metrics[model_type.value] = metrics
 
         with mlflow.start_run(run_name=f"evaluate_{model_type.value}"):

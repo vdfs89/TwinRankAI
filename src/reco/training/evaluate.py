@@ -56,6 +56,16 @@ def filter_lookup_by_history(
     return filtered, audit
 
 
+def train_items_by_visitor(train_events: pd.DataFrame) -> dict[int, set[int]]:
+    """Itens já vistos por cada visitante no treino.
+
+    Usado para separar, na avaliação, descoberta real (item novo) de
+    repetição (item recomendado que o visitante já tinha visto/comprado).
+    """
+    grouped = train_events.groupby("visitorid")["itemid"].apply(set)
+    return {int(v): items for v, items in grouped.items()}
+
+
 def recall_at_k(recommended: list[int], relevant: set[int], k: int) -> float:
     """Fração dos itens relevantes que aparecem no top-k recomendado."""
     if not relevant:
@@ -137,3 +147,24 @@ def evaluate_model(
         f"map_at_{k}": float(np.mean(maps)),
         f"ndcg_at_{k}": float(np.mean(ndcgs)),
     }
+
+
+def evaluate_novel_recall_at_k(
+    model: RecommenderModel,
+    test_events_by_visitor: dict[int, dict[int, float]],
+    train_items_by_visitor_map: dict[int, set[int]],
+    k: int,
+) -> float:
+    """Recall@k restrito a itens não vistos pelo visitante no treino.
+
+    Mede descoberta pura: exclui do conjunto de relevantes qualquer item já
+    presente no histórico de treino, isolando o quanto do recall_at_k comum
+    vem de repetição (recomendar de volta o que o visitante já viu/comprou).
+    """
+    recalls = []
+    for visitor_id, relevance_map in test_events_by_visitor.items():
+        seen = train_items_by_visitor_map.get(visitor_id, set())
+        novel_relevant = set(relevance_map.keys()) - seen
+        recommended = model.predict_top_k(visitor_id, k)
+        recalls.append(recall_at_k(recommended, novel_relevant, k))
+    return float(np.mean(recalls)) if recalls else 0.0
