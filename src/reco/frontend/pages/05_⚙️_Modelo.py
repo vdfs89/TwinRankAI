@@ -6,10 +6,12 @@ import streamlit as st
 sys.path.append(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 )
-from reco.frontend.utils import inject_custom_css
+from reco.frontend.utils import embedding_dim_from_metrics, inject_custom_css
 
 st.set_page_config(page_title="Arquitetura do Modelo - TwinRank AI", page_icon="⚙️", layout="wide")
 inject_custom_css()
+
+embedding_dim = embedding_dim_from_metrics()
 
 st.title("⚙️ Arquitetura do Modelo")
 st.markdown(
@@ -23,7 +25,8 @@ with col1:
     st.write(
         "A base do TwinRank é a arquitetura **Two-Tower** (Duas Torres), implementada em PyTorch. "
         "Uma torre processa os dados do usuário (Visitor) e a outra os dados do item (Product). "
-        "As duas torres mapeiam suas respectivas entradas para um mesmo espaço latente denso (Embedding Space) de 128 dimensões."  # noqa: E501
+        "As duas torres mapeiam suas respectivas entradas para um mesmo espaço latente denso "
+        f"(Embedding Space) de {embedding_dim} dimensões."
     )
 
     st.markdown("### 2. In-Batch Negative Sampling")

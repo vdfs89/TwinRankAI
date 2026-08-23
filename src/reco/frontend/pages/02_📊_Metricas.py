@@ -1,7 +1,5 @@
-import json  # noqa: D100
-import os
+import os  # noqa: D100
 import sys
-from pathlib import Path
 
 import plotly.graph_objects as go
 import streamlit as st
@@ -9,7 +7,13 @@ import streamlit as st
 sys.path.append(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 )
-from reco.frontend.utils import inject_custom_css
+from reco.frontend.utils import (
+    MODEL_LABELS,
+    inject_custom_css,
+    load_metrics,
+    metrics_missing_warning,
+    model_keys,
+)
 
 st.set_page_config(page_title="Métricas - TwinRank AI", page_icon="📊", layout="wide")
 inject_custom_css()
@@ -19,22 +23,13 @@ st.markdown(
     "Comparativo de performance entre os modelos treinados (Two-Tower vs. Matrix Factorization vs. Popularity)."  # noqa: E501
 )
 
-METRICS_PATH = Path("reports/metrics.json")
-MODEL_LABELS = {
-    "popularity": "Popularity",
-    "matrix_factorization": "Matrix Factorization",
-    "two_tower": "Two-Tower (TwinRank)",
-}
+metrics_data = load_metrics()
 
-if not METRICS_PATH.exists():
-    st.warning(
-        f"Arquivo `{METRICS_PATH}` não encontrado. "
-        "Rode `dvc repro evaluate` para gerar as métricas."
-    )
+if metrics_data is None:
+    metrics_missing_warning()
     st.stop()
 
-metrics_data = json.loads(METRICS_PATH.read_text(encoding="utf-8"))
-keys = [k for k in MODEL_LABELS if k in metrics_data]
+keys = model_keys(metrics_data)
 
 models = [MODEL_LABELS[k] for k in keys]
 recall = [metrics_data[k]["recall_at_10"] for k in keys]

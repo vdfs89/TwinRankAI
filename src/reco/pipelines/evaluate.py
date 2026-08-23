@@ -27,6 +27,22 @@ def _load_dataframe(path: Path) -> pd.DataFrame:
     return pd.read_csv(path, parse_dates=["timestamp"])
 
 
+def _production_run_id(settings: Settings) -> str | None:
+    """Busca o run_id da versão em produção no Model Registry.
+
+    Retorna None se o registry não estiver acessível — o pipeline de avaliação
+    não deve falhar por causa de um metadado informativo.
+    """
+    try:
+        client = mlflow.tracking.MlflowClient()
+        versions = client.get_latest_versions(
+            settings.mlflow_registered_model_name, stages=[settings.model_stage]
+        )
+    except Exception:  # noqa: BLE001 - registry indisponível não invalida a avaliação
+        return None
+    return versions[0].run_id if versions else None
+
+
 def run(settings: Settings) -> Path:  # noqa: D103
     configure_mlflow(settings)
 
@@ -61,6 +77,19 @@ def run(settings: Settings) -> Path:  # noqa: D103
         with mlflow.start_run(run_name=f"evaluate_{model_type.value}"):
             mlflow.log_params(eval_audit)
             mlflow.log_metrics(metrics)
+
+    # Metadados da execução: o app Streamlit lê daqui em vez de manter números
+    # de modelo hardcoded nas páginas (ver reco.frontend.utils.load_metrics).
+    all_metrics["_meta"] = {
+        "run_id": _production_run_id(settings),
+        "embedding_dim": settings.embedding_dim,
+        "top_k": settings.top_k,
+        "eval_visitors": eval_audit.get("eval_visitors_after_filter"),
+        "catalog_items": int(pd.concat([train_events.itemid, test_events.itemid]).nunique()),
+        "known_visitors": int(pd.concat([train_events.visitorid, test_events.visitorid]).nunique()),
+        "train_interactions": int(len(train_events)),
+        "test_interactions": int(len(test_events)),
+    }
 
     reports_dir = Path("reports")
     reports_dir.mkdir(parents=True, exist_ok=True)

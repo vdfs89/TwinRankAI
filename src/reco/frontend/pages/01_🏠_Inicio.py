@@ -7,7 +7,11 @@ import streamlit as st
 sys.path.append(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 )
-from reco.frontend.utils import inject_custom_css
+from reco.frontend.utils import (
+    inject_custom_css,
+    load_metrics,
+    metrics_missing_warning,
+)
 
 st.set_page_config(page_title="Início - TwinRank AI", page_icon="🏠", layout="wide")
 inject_custom_css()
@@ -36,16 +40,42 @@ st.markdown(
 
 st.markdown("---")
 
-# KPIs
-col1, col2, col3, col4 = st.columns(4)
-with col1:
-    st.metric(label="Usuários Processados", value="1.4M", delta="RetailRocket")
-with col2:
-    st.metric(label="Catálogo de Produtos", value="235K", delta="Live")
-with col3:
-    st.metric(label="Recall@10 (Two-Tower)", value="0.81", delta="+42% vs Baseline")
-with col4:
-    st.metric(label="Dimensão de Embeddings", value="128", delta="FAISS Index")
+# KPIs — todos os números vêm de reports/metrics.json (pipeline de avaliação).
+metrics_data = load_metrics()
+
+if metrics_data is None:
+    metrics_missing_warning()
+else:
+    meta = metrics_data.get("_meta", {})
+    two_tower_recall = metrics_data["two_tower"]["recall_at_10"]
+    popularity_recall = metrics_data["popularity"]["recall_at_10"]
+    lift = two_tower_recall / popularity_recall
+
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric(
+            label="Visitantes no Catálogo",
+            value=f"{meta.get('known_visitors', 0) / 1_000_000:.2f}M",
+            delta=f"{meta.get('eval_visitors', 0):,} avaliados".replace(",", "."),
+        )
+    with col2:
+        st.metric(
+            label="Catálogo de Produtos",
+            value=f"{meta.get('catalog_items', 0) / 1_000:.0f}K",
+            delta="RetailRocket",
+        )
+    with col3:
+        st.metric(
+            label="Recall@10 (Two-Tower)",
+            value=f"{two_tower_recall:.5f}".replace(".", ","),
+            delta=f"{lift:.0f}x vs Popularity",
+        )
+    with col4:
+        st.metric(
+            label="Dimensão de Embeddings",
+            value=str(meta.get("embedding_dim", "—")),
+            delta="FAISS Index",
+        )
 
 st.markdown("---")
 st.markdown("<br>", unsafe_allow_html=True)

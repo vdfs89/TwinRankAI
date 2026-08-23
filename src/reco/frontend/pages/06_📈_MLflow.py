@@ -7,7 +7,13 @@ import streamlit as st
 sys.path.append(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 )
-from reco.frontend.utils import inject_custom_css
+from reco.frontend.utils import (
+    MODEL_LABELS,
+    inject_custom_css,
+    load_metrics,
+    metrics_missing_warning,
+    model_keys,
+)
 
 st.set_page_config(page_title="MLOps & MLflow - TwinRank AI", page_icon="📈", layout="wide")
 inject_custom_css()
@@ -23,18 +29,49 @@ st.write(
     "`batch_size`, `embedding_dim`) e persistimos os pesos do modelo (Artifacts)."
 )
 
-st.markdown("### Histórico de Experimentos Recentes (Mockup)")
+st.markdown("### Resultados dos Modelos Avaliados")
 
-data = {
-    "Run ID": ["a1b2c3d4", "f5e6d7c8", "9a8b7c6d", "1a2b3c4d"],
-    "Model": ["Two-Tower", "Two-Tower", "Matrix Factorization", "Popularity"],
-    "Embed Dim": ["128", "64", "64", "N/A"],
-    "Learning Rate": ["0.001", "0.005", "0.01", "N/A"],
-    "Recall@10": [0.812, 0.765, 0.450, 0.151],
-    "Status": ["✅ COMPLETED", "✅ COMPLETED", "✅ COMPLETED", "✅ COMPLETED"],
-}
+metrics_data = load_metrics()
 
-st.dataframe(pd.DataFrame(data), use_container_width=True)
+if metrics_data is None:
+    metrics_missing_warning()
+else:
+    meta = metrics_data.get("_meta", {})
+    top_k = meta.get("top_k", 10)
+
+    rows = [
+        {
+            "Modelo": MODEL_LABELS[key],
+            "Embed Dim": meta.get("embedding_dim", "—") if key == "two_tower" else "—",
+            f"Recall@{top_k}": metrics_data[key][f"recall_at_{top_k}"],
+            f"NDCG@{top_k}": metrics_data[key][f"ndcg_at_{top_k}"],
+            f"MAP@{top_k}": metrics_data[key][f"map_at_{top_k}"],
+            f"Recall@{top_k} novel": metrics_data[key][f"recall_at_{top_k}_novel"],
+        }
+        for key in model_keys(metrics_data)
+    ]
+
+    st.dataframe(
+        pd.DataFrame(rows).style.format(
+            {
+                f"Recall@{top_k}": "{:.5f}",
+                f"NDCG@{top_k}": "{:.5f}",
+                f"MAP@{top_k}": "{:.5f}",
+                f"Recall@{top_k} novel": "{:.5f}",
+            }
+        ),
+        use_container_width=True,
+        hide_index=True,
+    )
+
+    run_id = meta.get("run_id")
+    st.caption(
+        f"Run registrado em produção: `{run_id}` · "
+        f"avaliação sobre {meta.get('eval_visitors', 0):,} visitantes "
+        f"com histórico mínimo de treino.".replace(",", ".")
+        if run_id
+        else f"Avaliação sobre {meta.get('eval_visitors', 0):,} visitantes.".replace(",", ".")
+    )
 
 st.info(
     "Na infraestrutura em Cloud ou Local, acessar http://localhost:5000 exibe o painel oficial do MLflow com os gráficos interativos de cada step das épocas (Loss vs Epoch)."  # noqa: E501

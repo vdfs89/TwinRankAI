@@ -161,8 +161,8 @@ stages:
       size: 1239
     - path: src/reco/pipelines/evaluate.py
       hash: md5
-      md5: 13a699b6d4a71ad09be7135da272c9a8
-      size: 2849
+      md5: 8c6ec01bafd9208b33eb1a60a20f56a4
+      size: 4239
     - path: src/reco/settings.py
       hash: md5
       md5: 9b638d965b687c74aba4489bdc737930
@@ -178,5 +178,5 @@ stages:
     outs:
     - path: reports/metrics.json
       hash: md5
-      md5: 68da1246e8be5d39b41f991974fa7201
-      size: 857
+      md5: fcbcc976930e33a06fc67dc9beb248f9
+      size: 1130

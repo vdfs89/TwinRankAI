@@ -58,4 +58,8 @@ stages:
       - models/popularity/model.joblib
       - models/matrix_factorization/model.joblib
     metrics:
-      - reports/metrics.json
+      # cache: false -> o arquivo e versionado pelo git, nao pelo cache do DVC.
+      # Necessario porque o app Streamlit Cloud le reports/metrics.json em
+      # runtime e nao tem acesso ao cache/remote do DVC.
+      - reports/metrics.json:
+          cache: false
