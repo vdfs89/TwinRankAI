@@ -23,7 +23,7 @@ O TwinRank AI é um motor de recomendação para e-commerce orientado a produç�
 
 O projeto combina Deep Learning, Engenharia de Machine Learning e MLOps em um pipeline reproduzível para experimentação e deploy. Em vez de depender apenas de popularidade ou regras estáticas, ele aprende padrões comportamentais com rastreabilidade, versionamento e rigor operacional.
 
-> Em nossa execução de referência, o modelo **Two-Tower melhorou o NDCG@10 em mais de 300%** em comparação com o baseline de popularidade, demonstrando sua capacidade de aprender preferências sutis dos usuários.
+> Em nossa execução de referência, o modelo **Two-Tower atingiu Recall@10 = 0,123 e NDCG@10 = 0,101**, contra 0,00342 e 0,00408 do baseline de popularidade. Parte desse ganho vem de repetir itens já vistos pelo usuário; controlando por descoberta pura, o Two-Tower ainda lidera. Ver [Métricas](#métricas) para os números completos e as ressalvas metodológicas.
 
 ## Links Rápidos
 
@@ -215,13 +215,29 @@ poetry run streamlit run src/reco/frontend/app.py
 
 O TwinRank AI avalia a qualidade da recomendação com métricas orientadas a ranking, em vez de depender apenas de acurácia de classificação. Para sistemas de recomendação, métricas como Recall@K, MAP@K, MRR@K e NDCG@K fornecem uma visão mais útil sobre a capacidade do modelo de exibir itens relevantes em posições valiosas.
 
-| Modelo | Recall@10 | MAP@10 | MRR@10 | NDCG@10 |
-|---------------------------------|-----------|--------|--------|---------|
-| Baseline de Popularidade        | 0.041     | 0.015  | 0.031  | 0.024   |
-| Matrix Factorization / Baseline | 0.062     | 0.023  | 0.048  | 0.039   |
-| Modelo Neural Two-Tower         | **0.125** | **0.058**  | **0.102**  | **0.081**   |
+| Modelo | Recall@10 | Precision@10 | MAP@10 | MRR@10 | NDCG@10 |
+|---------------------------------|-----------|--------------|--------|--------|---------|
+| Baseline de Popularidade        | 0,00342   | 0,00147      | 0,00310 | 0,00965 | 0,00408 |
+| Matrix Factorization / Baseline | 0,02265   | 0,00870      | 0,01386 | 0,03086 | 0,01958 |
+| Modelo Neural Two-Tower         | **0,12311** | **0,03205** | **0,07604** | **0,13286** | **0,10078** |
 
-*Resultados de uma execução de referência rastreada no MLflow. Veja o Model Card para detalhes.*
+O Two-Tower atinge 36,0x o Recall@10 do baseline de popularidade, 24,7x o NDCG@10, e 5,4x o Recall@10 do Matrix Factorization.
+
+> **Mudança de população de avaliação.** Estes números não são comparáveis com versões anteriores deste README: a avaliação passou a restringir-se a visitantes com pelo menos 5 interações no conjunto de treino (`eval_min_train_interactions=5`), o que reduziu a população avaliada de 23.476 para 2.920 usuários. O filtro foi necessário porque 57% dos visitantes originais tinham uma única interação de treino e dominavam a média, tornando a métrica sem sentido estatístico. Uma queda aparente do baseline entre versões reflete essa troca de população, não uma regressão do modelo.
+
+> **Repetição vs. descoberta.** Parte substancial do Recall@10 do Two-Tower vem de recomendar itens que o usuário já havia visto no treino, não de itens novos. `Recall@10 (novel)` mede só a descoberta: exclui dos relevantes de cada usuário tudo que já estava em seu histórico de treino.
+>
+> | Modelo | Recall@10 (geral) | Recall@10 (novel) | Fração que é repetição |
+> |---|---|---|---|
+> | Baseline de Popularidade | 0,00342 | 0,00202 | 40,8% |
+> | Matrix Factorization | 0,02265 | 0,00359 | 84,1% |
+> | Two-Tower | 0,12311 | 0,01168 | 90,5% |
+>
+> Ou seja: apenas ~9,5% do Recall@10 do Two-Tower é acerto em item nunca interagido antes. A taxa de repetição sobe conforme o modelo personaliza mais — a popularidade não personaliza e por isso acerta itens novos com frequência relativa maior. Isso é esperado em modelos de embedding de ID puro, onde a única generalização possível é por co-ocorrência aprendida, e não um erro de implementação. Mesmo controlando por descoberta pura o Two-Tower ainda lidera, com 3,3x o `Recall@10 (novel)` do Matrix Factorization e 5,8x o da Popularidade — mas essa margem é menor que os 5,4x do Recall@10 geral sugerem. A comparação justa cita as duas métricas, nunca o Recall@10 geral isolado. Ver [Model Card](docs/model_card.md) para a análise completa.
+
+*Resultados de uma execução de referência rastreada no MLflow, gerados por `dvc repro` em `reports/metrics.json`. Veja o Model Card para detalhes.*
+
+> **TODO — sincronização manual.** As tabelas acima são geradas por `python scripts/export_metrics_for_readme.py`, que apenas imprime o markdown em stdout. Após qualquer `dvc repro` que altere `reports/metrics.json`, é preciso colar a saída aqui e no [Model Card](docs/model_card.md) manualmente, senão os números divergem silenciosamente do pipeline. A página de métricas do Streamlit já lê o JSON direto e não precisa desse passo.
 
 ### Status Atual
 
