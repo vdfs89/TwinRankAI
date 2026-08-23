@@ -42,6 +42,13 @@ services:
 
   train:
     build: .
+    # Fora do up padrão: este serviço executa o pipeline completo (~12,5 min) e
+    # sobrescreve models/ pelo volume montado. Um `docker compose up` sem
+    # argumentos dispararia um retreino e substituiria o checkpoint em uso.
+    # Rode explicitamente com:
+    #   docker compose --profile training run --rm train
+    profiles:
+      - training
     depends_on:
       - mlflow
     environment:

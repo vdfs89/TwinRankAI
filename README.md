@@ -188,6 +188,24 @@ Executar o pipeline completo:
 dvc repro
 ```
 
+### Rotas da API
+
+| Rota | Método | Descrição |
+|---|---|---|
+| `/health` | GET | Health check |
+| `/model/version` | GET | Caminho, nome registrado e stage do modelo servido |
+| `/recommend/{user_id}` | GET | Top-k recomendações (`top_k` entre 1 e 100) |
+| `/predict` | POST | Top-k restrito a uma lista de candidatos |
+| `/train` | POST | Dispara o pipeline de treino em background (202) |
+| `/preprocess` | POST | Executa o pré-processamento |
+| `/feature-eng` | POST | Executa a engenharia de features |
+
+O modelo é carregado no startup da aplicação (~8 s), não no primeiro request. Cada resposta traz o header `X-Response-Time-ms` e a latência é registrada no log estruturado.
+
+`/recommend` e `/predict` retornam o campo `strategy`, que indica como a resposta foi produzida: `two_tower` (personalizado), `popularity_fallback` (visitante ausente do índice — cold-start, cai no ranking global de popularidade) ou `unavailable` (nenhum modelo carregado).
+
+> **Limitação conhecida — `POST /train`.** A rota devolve `202 training_started` imediatamente e executa o pipeline via `BackgroundTasks` do FastAPI, porque o treino real leva ~12,5 min e bloquearia a conexão até o timeout. `BackgroundTasks` roda no mesmo processo do servidor: não sobrevive a restart, não tem retry, não tem visibilidade de progresso e concorre por CPU com o serving. **Não é adequado para produção sem uma fila de jobs dedicada** (Celery, RQ, Arq ou equivalente). Acompanhe o andamento pelo MLflow.
+
 ---
 
 ## Demo Plugável (E-commerce SaaS)

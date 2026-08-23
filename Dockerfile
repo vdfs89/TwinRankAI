@@ -23,7 +23,10 @@ RUN poetry install --only main --no-root
 
 FROM python:3.11-slim AS runtime
 
+# PYTHONPATH aponta para src/: o build usa `poetry install --no-root`, então o
+# pacote `reco` não é instalado no site-packages e só é importável pelo caminho.
 ENV PATH="/app/.venv/bin:$PATH" \
+    PYTHONPATH=/app/src \
     PYTHONUNBUFFERED=1
 
 WORKDIR /app

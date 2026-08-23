@@ -86,6 +86,25 @@ personaliza e por isso acerta itens novos com frequência relativa maior,
 enquanto modelos de embedding de ID aprendem fortemente a afinidade
 usuário-item — inclusive para itens que o usuário já consumiu.
 
+### Teto de memorização
+
+Para dimensionar o componente de repetição, calculamos o Recall@10 de um
+oráculo que apenas devolve os itens de maior relevância do próprio histórico de
+treino de cada usuário — o melhor que uma estratégia de pura memorização
+poderia atingir.
+
+| Referência | Recall@10 |
+|---|---|
+| Teto de memorização (oráculo) | 0,16158 |
+| Two-Tower (real) | 0,12311 |
+| **Fração do teto atingida** | **76,2%** |
+
+Reproduzível por `python scripts/memorization_ceiling.py`, sobre a mesma
+população filtrada de 2.920 visitantes usada nas métricas oficiais — a
+comparação só é válida sob essa condição. Estimativas anteriores que dividiam o
+Recall@10 filtrado por um teto medido na população não filtrada misturavam duas
+populações distintas e foram descartadas.
+
 ## Reprodutibilidade
 
 - Seeds fixadas em `TwoTowerRecommender.fit`: `torch.manual_seed` (inicialização
@@ -133,15 +152,34 @@ usuário-item — inclusive para itens que o usuário já consumiu.
 
 ## Casos de falha esperados
 
-- Usuário novo sem histórico.
-- Item recém-catalogado sem embeddings treinados.
+- Usuário novo sem histórico: o two-tower não tem embedding para ele e a API
+  degrada para o ranking global de popularidade, sinalizado no campo `strategy`
+  da resposta como `popularity_fallback`.
+- Item recém-catalogado sem embeddings treinados: não é recuperável até o
+  próximo ciclo de treino.
 - Sessões muito curtas com sinal insuficiente.
 
 ## Deploy e observabilidade
 
 - Modelo deve ser promovido no MLflow Registry antes de ser servido.
-- A API deve expor recomendações e health check.
-- Latência, throughput e taxa de erro devem ser monitorados nas próximas fases.
+- A API expõe `/recommend`, `/predict`, `/health` e `/model/version`; o modelo é
+  carregado no startup (~8 s) para não penalizar o primeiro request.
+- Latência de cada request é medida por middleware, registrada no log
+  estruturado e devolvida no header `X-Response-Time-ms`. Throughput e taxa de
+  erro seguem pendentes de instrumentação.
+
+## Dívida técnica conhecida
+
+- `Settings` usa `BaseSettings` do pydantic v1 e não é hashable. Isso já
+  derrubou o serving uma vez, via `lru_cache` sobre `get_recommendation_service`
+  (`TypeError` a cada `/recommend`, resultando em 500). A correção aplicada foi
+  um singleton de módulo; a migração de `Settings` para pydantic v2 continua
+  pendente.
+- `POST /train` executa via `BackgroundTasks` no mesmo processo do servidor: sem
+  fila dedicada, não há retry, persistência entre restarts nem visibilidade de
+  progresso.
+- As tabelas de métricas do README e deste Model Card são sincronizadas à mão a
+  partir de `scripts/export_metrics_for_readme.py`, que só imprime em stdout.
 
 ## Responsável
 

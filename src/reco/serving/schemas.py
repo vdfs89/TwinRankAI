@@ -9,12 +9,15 @@ from pydantic import BaseModel, Field
 
 class TrainResponse(BaseModel):  # noqa: D101
     status: str = "ok"
-    runs: list[dict[str, str | dict[str, float]]]
+    detail: str = ""
 
 
 class RecommendResponse(BaseModel):  # noqa: D101
     user_id: int
     item_ids: list[int]
+    # Qual caminho produziu a resposta: "two_tower" (personalizado),
+    # "popularity_fallback" (cold-start) ou "unavailable" (sem modelo).
+    strategy: str = "two_tower"
 
 
 class PredictRequest(BaseModel):  # noqa: D101
@@ -26,3 +29,4 @@ class PredictRequest(BaseModel):  # noqa: D101
 class PredictResponse(BaseModel):  # noqa: D101
     user_id: int
     recommendations: list[int]
+    strategy: str = "two_tower"

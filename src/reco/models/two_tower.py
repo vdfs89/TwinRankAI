@@ -121,7 +121,7 @@ class TwoTowerRecommender:
         items = filtered_events["itemid"].unique()
         self._visitor_index = {v: i for i, v in enumerate(visitors)}
         self._item_index = {it: i for i, it in enumerate(items)}
-        self._index_to_item = {i: it for it, i in self._item_index.items()}
+        self._index_to_item = {i: int(it) for it, i in self._item_index.items()}
 
         visitor_ids = filtered_events["visitorid"].map(self._visitor_index).to_numpy()
         item_ids = filtered_events["itemid"].map(self._item_index).to_numpy()
@@ -268,7 +268,7 @@ class TwoTowerRecommender:
         checkpoint = torch.load(path, map_location=self._device, weights_only=False)
         self._visitor_index = checkpoint["visitor_index"]
         self._item_index = checkpoint["item_index"]
-        self._index_to_item = {i: it for it, i in self._item_index.items()}
+        self._index_to_item = {i: int(it) for it, i in self._item_index.items()}
 
         self._net = _TwoTowerNet(
             n_visitors=len(self._visitor_index),

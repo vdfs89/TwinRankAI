@@ -162,6 +162,24 @@ Run the API locally:
 python -m uvicorn reco.serving.api:app --reload
 ```
 
+### API routes
+
+| Route | Method | Description |
+|---|---|---|
+| `/health` | GET | Health check |
+| `/model/version` | GET | Path, registered name and stage of the served model |
+| `/recommend/{user_id}` | GET | Top-k recommendations (`top_k` between 1 and 100) |
+| `/predict` | POST | Top-k restricted to a candidate list |
+| `/train` | POST | Kicks off the training pipeline in the background (202) |
+| `/preprocess` | POST | Runs preprocessing |
+| `/feature-eng` | POST | Runs feature engineering |
+
+The model is loaded at application startup (~8 s), not on the first request. Every response carries an `X-Response-Time-ms` header, and latency is recorded in the structured log.
+
+`/recommend` and `/predict` return a `strategy` field indicating how the response was produced: `two_tower` (personalized), `popularity_fallback` (visitor missing from the index — cold start, falls back to the global popularity ranking) or `unavailable` (no model loaded).
+
+> **Known limitation — `POST /train`.** The route returns `202 training_started` immediately and runs the pipeline through FastAPI's `BackgroundTasks`, because real training takes ~12.5 min and would block the connection until timeout. `BackgroundTasks` runs in the server process: it does not survive a restart, has no retries, no progress visibility, and competes for CPU with serving. **It is not production-ready without a dedicated job queue** (Celery, RQ, Arq or equivalent). Track progress in MLflow.
+
 Run the full pipeline:
 
 ```bash

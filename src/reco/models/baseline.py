@@ -55,7 +55,7 @@ class MatrixFactorizationRecommender:
         items = train_events["itemid"].unique()
         self._visitor_index = {v: i for i, v in enumerate(visitors)}
         self._item_index = {it: i for i, it in enumerate(items)}
-        self._index_to_item = {i: it for it, i in self._item_index.items()}
+        self._index_to_item = {i: int(it) for it, i in self._item_index.items()}
 
         rows = train_events["visitorid"].map(self._visitor_index)
         cols = train_events["itemid"].map(self._item_index)
@@ -99,4 +99,4 @@ class MatrixFactorizationRecommender:
         self._item_factors = data["item_factors"]
         self._visitor_index = data["visitor_index"]
         self._item_index = data["item_index"]
-        self._index_to_item = {i: it for it, i in self._item_index.items()}
+        self._index_to_item = {i: int(it) for it, i in self._item_index.items()}
