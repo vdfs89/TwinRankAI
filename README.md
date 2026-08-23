@@ -182,11 +182,54 @@ Executar a API localmente:
 python -m uvicorn reco.serving.api:app --reload
 ```
 
-Executar o pipeline completo:
+### Dados versionados com DVC
+
+Os dados brutos (`data/raw/`, 942 MB) não ficam no Git — são versionados
+pelo DVC, e o repositório guarda apenas o ponteiro `data/raw.dvc`. Para
+obter os dados em uma máquina nova:
+
+```bash
+dvc pull
+```
+
+**Remote configurado.** Este projeto usa um *remote local* (um diretório
+fora do repositório), declarado em `.dvc/config`:
+
+```
+['remote "storage"']
+    url = D:/twinrank-dvc-storage
+```
+
+Essa é uma **decisão de escopo explícita**, não uma limitação escondida: o
+enunciado da Fase 2 aceita remote local, e assim o projeto é reproduzível
+sem credenciais de nuvem nem custo. Em produção, o mesmo comando trocaria
+o caminho por um bucket, sem nenhuma outra mudança no pipeline:
+
+```bash
+dvc remote add -d storage s3://meu-bucket/twinrank
+```
+
+Como o `url` acima é um caminho da máquina de origem, quem clonar o
+repositório precisa apontá-lo para onde os dados estiverem:
+
+```bash
+dvc remote modify --local storage url /caminho/para/o/storage
+dvc pull
+```
+
+O modificador `--local` grava em `.dvc/config.local`, que não é versionado
+— assim cada máquina aponta para o seu storage sem gerar conflito no Git.
+O mesmo vale para o cache: `dvc cache dir --local <caminho>` permite manter
+o cache em outro disco.
+
+Executar o pipeline completo (requer `dvc pull` antes, para ter os dados):
 
 ```bash
 dvc repro
 ```
+
+Os 4 stages (`preprocess`, `feature_eng`, `train`, `evaluate`) rodam em
+sequência; o treino domina o tempo total.
 
 ### Rotas da API
 
