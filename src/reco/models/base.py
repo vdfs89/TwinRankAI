@@ -28,3 +28,27 @@ class RecommenderModel(Protocol):
     def load(self, path: str) -> None:
         """Carrega um modelo treinado do disco."""
         ...
+
+
+def native_id(value: object) -> object:
+    """Normaliza ids numpy (`numpy.int64`) para tipos nativos de Python.
+
+    `numpy.int64` não é serializável por `json.dumps`, o que já derrubou a
+    gravação no cache Redis com `TypeError`. A normalização preserva ids
+    alfanuméricos intactos (`"P001"`), usados pelo demo plugável.
+
+    Args:
+    ----
+        value: id de item vindo do índice do modelo.
+
+    Returns:
+    -------
+        `int` quando o valor é numérico, o próprio valor caso contrário.
+
+    """
+    if isinstance(value, str):
+        return value
+    try:
+        return int(value)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return value

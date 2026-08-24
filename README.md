@@ -301,9 +301,18 @@ Se você possui um e-commerce ou quer ver o TwinRank operando nos seus próprios
 
 🌐 **[Acessar o App no Streamlit Cloud](https://twinrankai.streamlit.app/)**
 
-Basta fornecer dois arquivos CSV (ou usar os dados de exemplo embutidos):
-- `products.csv`: (item_id, name, category, price)
-- `orders.csv`: (user_id, item_id, event_type, timestamp)
+Basta fornecer dois arquivos CSV (ou usar os dados de exemplo embutidos em
+`dummy_data/`):
+
+- `products.csv`: `product_id`, `name`, `category`, `price`
+- `orders.csv`: `user_id`, `product_id`, `timestamp` (e opcionalmente
+  `event_type`)
+
+Os ids podem ser alfanuméricos (`U01`, `P001`) — não precisam ser numéricos.
+Se `orders.csv` trouxer `event_type`, os valores `view`, `addtocart` e
+`transaction` recebem os mesmos pesos de relevância do pipeline principal
+(1,0 / 3,0 / 5,0); sem essa coluna, cada linha conta como uma interação de
+peso 1,0.
 
 Faça o upload dos seus CSVs na página "Recomendações" do app, e o sistema treinará um modelo TwinRank customizado + índice FAISS em memória em poucos segundos.
 

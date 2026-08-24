@@ -31,13 +31,26 @@ def build_relevance_lookup(test_events: pd.DataFrame) -> dict[int, dict[int, flo
     return lookup
 
 
+def _as_visitor_id(value: object) -> object:
+    """Normaliza o id para int quando possível, preservando ids não numéricos.
+
+    O dataset RetailRocket usa ids inteiros, mas o demo plugável aceita
+    planilhas com ids alfanuméricos (`U01`). Forçar `int()` quebrava esse caso
+    com `ValueError`.
+    """
+    try:
+        return int(value)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return value
+
+
 def eligible_visitors(
     train_events: pd.DataFrame,
     min_interactions: int = MIN_TRAIN_INTERACTIONS,
-) -> set[int]:
+) -> set[object]:
     """Visitantes com histórico de treino suficiente para serem modelados/avaliados."""
     counts = train_events.groupby("visitorid")["itemid"].nunique()
-    return {int(v) for v in counts[counts >= min_interactions].index}
+    return {_as_visitor_id(v) for v in counts[counts >= min_interactions].index}
 
 
 def filter_lookup_by_history(

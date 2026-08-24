@@ -12,6 +12,7 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader, Dataset
 
+from reco.models.base import native_id
 from reco.settings import Settings
 from reco.training.evaluate import MIN_TRAIN_INTERACTIONS, eligible_visitors
 from reco.utils.logging import get_logger
@@ -106,11 +107,15 @@ class TwoTowerRecommender:
         # aprendido a partir de 1 única interação fica praticamente na
         # inicialização — só infla a matriz de parâmetros e o tempo de treino.
         # Mesmo critério aplicado na avaliação (reco.training.evaluate).
-        eligible = eligible_visitors(train_events, MIN_TRAIN_INTERACTIONS)
+        # O corte padrão é MIN_TRAIN_INTERACTIONS (5), o mesmo da avaliação.
+        # Configurações menores — como a do demo plugável, que treina sobre uma
+        # planilha de dezenas de linhas — podem baixá-lo sem afetar o pipeline.
+        min_interactions = getattr(self._settings, "min_train_interactions", MIN_TRAIN_INTERACTIONS)
+        eligible = eligible_visitors(train_events, min_interactions)
         filtered_events = train_events[train_events["visitorid"].isin(eligible)]
         logger.info(
             "populacao_de_treino_filtrada",
-            min_interacoes=MIN_TRAIN_INTERACTIONS,
+            min_interacoes=min_interactions,
             visitors_antes=int(train_events["visitorid"].nunique()),
             visitors_depois=int(filtered_events["visitorid"].nunique()),
             eventos_antes=len(train_events),
@@ -121,7 +126,7 @@ class TwoTowerRecommender:
         items = filtered_events["itemid"].unique()
         self._visitor_index = {v: i for i, v in enumerate(visitors)}
         self._item_index = {it: i for i, it in enumerate(items)}
-        self._index_to_item = {i: int(it) for it, i in self._item_index.items()}
+        self._index_to_item = {i: native_id(it) for it, i in self._item_index.items()}
 
         visitor_ids = filtered_events["visitorid"].map(self._visitor_index).to_numpy()
         item_ids = filtered_events["itemid"].map(self._item_index).to_numpy()
@@ -268,7 +273,7 @@ class TwoTowerRecommender:
         checkpoint = torch.load(path, map_location=self._device, weights_only=False)
         self._visitor_index = checkpoint["visitor_index"]
         self._item_index = checkpoint["item_index"]
-        self._index_to_item = {i: int(it) for it, i in self._item_index.items()}
+        self._index_to_item = {i: native_id(it) for it, i in self._item_index.items()}
 
         self._net = _TwoTowerNet(
             n_visitors=len(self._visitor_index),
