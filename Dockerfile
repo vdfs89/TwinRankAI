@@ -15,7 +15,10 @@ RUN curl -sSL https://install.python-poetry.org | python -
 
 WORKDIR /app
 
-COPY pyproject.toml README.md ./
+# poetry.lock ANTES do install: sem ele o Poetry resolve as dependencias do
+# zero a cada build, ignorando as versoes testadas e tornando a imagem nao
+# reproduzivel.
+COPY pyproject.toml poetry.lock README.md ./
 COPY src ./src
 COPY scripts ./scripts
 

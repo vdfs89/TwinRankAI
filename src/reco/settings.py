@@ -65,8 +65,12 @@ class Settings(PydanticBaseSettings):
     top_k: int = Field(default=10, env="TOP_K")
 
     # MLflow
+    # Default é o file store local: `dvc repro` precisa funcionar em uma máquina
+    # limpa sem nenhum servidor no ar. Um clone limpo falhava no stage `train`
+    # quando o default apontava para http://localhost:5000 sem fallback.
+    # Para um servidor remoto/compartilhado, sobrescreva MLFLOW_TRACKING_URI.
     mlflow_tracking_uri: str = Field(
-        default="http://localhost:5000",
+        default="file:./mlruns",
         env="MLFLOW_TRACKING_URI",
     )
     mlflow_experiment_name: str = Field(

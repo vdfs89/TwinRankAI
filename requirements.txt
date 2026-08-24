@@ -1,3 +1,7 @@
+# Subset de dependencias APENAS para o deploy no Streamlit Cloud, que nao
+# suporta Poetry. A fonte de verdade das dependencias e pyproject.toml +
+# poetry.lock; este arquivo cobre so o necessario para a demo do frontend
+# (sem fastapi, mlflow, dvc, redis). Ao mudar versoes no pyproject, revise aqui.
 --extra-index-url https://download.pytorch.org/whl/cpu
 torch==2.3.0+cpu
 scikit-learn>=1.5.0

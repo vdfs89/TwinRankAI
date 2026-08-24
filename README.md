@@ -173,14 +173,58 @@ make install
 make validate
 make lint
 make test
-make mlflow-ui
 ```
 
 Executar a API localmente:
 
 ```bash
-python -m uvicorn reco.serving.api:app --reload
+poetry run uvicorn reco.serving.api:app --reload
 ```
+
+### Docker
+
+```bash
+docker compose up -d
+```
+
+Sobe `app` (API FastAPI na porta 8000), `mlflow` (5000), `redis` (6379) e
+`streamlit` (8501).
+
+> **O serviço de treino NÃO sobe com `docker compose up`.** Ele está isolado
+> atrás do profile `training`, de propósito: seu comando executa o pipeline
+> completo (~18 min) e sobrescreveria `models/` através do volume montado,
+> destruindo o checkpoint que a documentação referencia. Para treinar dentro
+> do Docker, chame-o explicitamente:
+>
+> ```bash
+> docker compose --profile training run --rm train
+> ```
+
+### Reproduzir o projeto do zero
+
+Fluxo completo, validado em um clone limpo em máquina separada:
+
+```bash
+git clone https://github.com/vdfs89/TwinRankAI.git
+cd TwinRankAI
+poetry install --only main
+dvc pull
+poetry run dvc repro
+```
+
+**Tempo de referência:** os 4 stages levam **~18 minutos** (medido: 1082 s),
+dominados pelo treino. O `dvc pull` baixa 942 MB e leva poucos segundos.
+
+> **Use `poetry run` (ou ative o ambiente antes).** Cada stage do
+> `dvc.yaml` executa `python -m reco.pipelines...`; sem o ambiente do
+> projeto ativo, esse `python` é o do sistema e o pipeline falha em
+> segundos com `ModuleNotFoundError: No module named 'reco'`.
+
+> **Não é preciso subir servidor MLflow.** O padrão é o file store local
+> (`MLFLOW_TRACKING_URI=file:./mlruns`), então o pipeline roda offline.
+> Para inspecionar os runs depois: `make mlflow-ui`. Usar um servidor
+> remoto/compartilhado é opcional — basta sobrescrever
+> `MLFLOW_TRACKING_URI` no `.env` (ex.: `http://localhost:5000`).
 
 ### Dados versionados com DVC
 
@@ -225,7 +269,7 @@ o cache em outro disco.
 Executar o pipeline completo (requer `dvc pull` antes, para ter os dados):
 
 ```bash
-dvc repro
+poetry run dvc repro
 ```
 
 Os 4 stages (`preprocess`, `feature_eng`, `train`, `evaluate`) rodam em
@@ -296,7 +340,17 @@ O Two-Tower atinge 36,0x o Recall@10 do baseline de popularidade, 24,7x o NDCG@1
 >
 > Ou seja: apenas ~9,5% do Recall@10 do Two-Tower é acerto em item nunca interagido antes. A taxa de repetição sobe conforme o modelo personaliza mais — a popularidade não personaliza e por isso acerta itens novos com frequência relativa maior. Isso é esperado em modelos de embedding de ID puro, onde a única generalização possível é por co-ocorrência aprendida, e não um erro de implementação. Mesmo controlando por descoberta pura o Two-Tower ainda lidera, com 3,3x o `Recall@10 (novel)` do Matrix Factorization e 5,8x o da Popularidade — mas essa margem é menor que os 5,4x do Recall@10 geral sugerem. A comparação justa cita as duas métricas, nunca o Recall@10 geral isolado. Ver [Model Card](docs/model_card.md) para a análise completa.
 
-*Resultados de uma execução de referência rastreada no MLflow, gerados por `dvc repro` em `reports/metrics.json`. Veja o Model Card para detalhes.*
+> **Teto de memorização.** Como boa parte do Recall@10 vem de repetição, vale
+> saber o quanto dela seria possível: um oráculo que apenas devolvesse os itens
+> de maior relevância do próprio histórico de treino atinge Recall@10 = 0,16158
+> na mesma população de 2.920 visitantes. O Two-Tower alcança **76,2%** desse
+> teto (0,12311 / 0,16158). Reproduzível com
+> `poetry run python scripts/memorization_ceiling.py`.
+
+*Resultados da execução de referência rastreada no MLflow sob o run
+`a9e7c00368df4b93acc655a6493e9b69`, registrado como `twinrank-ai-two-tower`
+(stage Production), gerados por `dvc repro` em `reports/metrics.json`. Veja o
+[Model Card](docs/model_card.md) para detalhes.*
 
 > **TODO — sincronização manual.** As tabelas acima são geradas por `python scripts/export_metrics_for_readme.py`, que apenas imprime o markdown em stdout. Após qualquer `dvc repro` que altere `reports/metrics.json`, é preciso colar a saída aqui e no [Model Card](docs/model_card.md) manualmente, senão os números divergem silenciosamente do pipeline. A página de métricas do Streamlit já lê o JSON direto e não precisa desse passo.
 
