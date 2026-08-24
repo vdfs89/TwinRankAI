@@ -99,7 +99,7 @@ poderia atingir.
 | Two-Tower (real) | 0,12311 |
 | **Fração do teto atingida** | **76,2%** |
 
-Reproduzível por `python scripts/memorization_ceiling.py`, sobre a mesma
+Reproduzível por `poetry run python scripts/memorization_ceiling.py`, sobre a mesma
 população filtrada de 2.920 visitantes usada nas métricas oficiais — a
 comparação só é válida sob essa condição. Estimativas anteriores que dividiam o
 Recall@10 filtrado por um teto medido na população não filtrada misturavam duas
@@ -107,13 +107,59 @@ populações distintas e foram descartadas.
 
 ## Reprodutibilidade
 
-- Seeds fixadas em `TwoTowerRecommender.fit`: `torch.manual_seed` (inicialização
-  dos embeddings e ordem do DataLoader) e `np.random.seed` (amostragem negativa
-  em `_InteractionDataset`). Ambas derivam de `settings.random_seed`.
-- Pipeline versionado com DVC (`dvc.yaml` / `dvc.lock`): `dvc repro` reexecuta
-  preprocess, feature engineering, treino e avaliação de forma determinística.
-- Métricas persistidas em `reports/metrics.json` e registradas no MLflow junto
-  aos parâmetros de auditoria da população avaliada
+### Fontes de aleatoriedade
+
+Todas fixadas a partir de `settings.random_seed` (default 42):
+
+| Fonte | Onde | Como |
+|---|---|---|
+| Inicialização dos embeddings | `TwoTowerRecommender.fit` | `torch.manual_seed` |
+| Ordem do `DataLoader` (`shuffle=True`) | idem | generator global do torch |
+| Amostragem negativa | `_InteractionDataset.__getitem__` | `np.random.seed` |
+| SVD do baseline | `MatrixFactorizationRecommender` | `TruncatedSVD(random_state=42)` |
+
+A amostragem negativa merece nota, porque o `DataLoader` roda com
+`num_workers=4` e cada worker é um processo separado — o `np.random.seed` do
+processo pai, sozinho, não bastaria. O PyTorch resolve isso: em
+`torch.utils.data._utils.worker._worker_loop` ele executa
+`np.random.seed(_generate_state(base_seed, worker_id))`, e `base_seed` deriva
+do generator semeado por `torch.manual_seed`. O determinismo, portanto, vale
+também com múltiplos workers — e foi confirmado empiricamente (abaixo), não
+apenas por leitura de código.
+
+### Determinismo verificado ponta a ponta
+
+O pipeline foi reexecutado do zero em um **clone limpo do repositório, em
+outro disco**, sem copiar nenhum artefato da máquina de origem:
+
+```bash
+git clone https://github.com/vdfs89/TwinRankAI.git
+poetry install --only main
+dvc pull                 # 942 MB, 4 arquivos brutos
+poetry run dvc repro     # 4 stages, 1082 s (~18 min)
+```
+
+Resultado: **as 18 métricas (6 por modelo × 3 modelos) saíram idênticas bit a
+bit** às da execução de referência, incluindo
+`two_tower.recall_at_10 = 0.12311161989031467` com todos os dígitos. O
+`model.joblib` do Two-Tower saiu com os mesmos 34.866.005 bytes.
+
+O único campo divergente foi `_meta.run_id`, esperado: um Model Registry novo
+gera um run novo. Isso é divergência de ambiente, não de modelo.
+
+Esse teste também revelou dois pontos que só aparecem fora da máquina de
+origem, ambos hoje corrigidos e documentados no README: o pipeline exige o
+ambiente ativo (`poetry run`), e o MLflow passou a usar o file store local
+como default — antes apontava para um servidor que um terceiro não teria no ar.
+
+### Versionamento
+
+- Dados brutos versionados com DVC (`data/raw.dvc`, 987.498.023 bytes) e
+  publicados em remote; o Git guarda apenas o ponteiro.
+- Pipeline versionado em `dvc.yaml` / `dvc.lock`.
+- Métricas persistidas em `reports/metrics.json` (versionado via
+  `cache: false`, para o app Streamlit poder lê-las) e registradas no MLflow
+  junto aos parâmetros de auditoria da população avaliada
   (`eval_min_train_interactions`, `eval_visitors_before_filter`,
   `eval_visitors_after_filter`).
 
@@ -139,7 +185,14 @@ populações distintas e foram descartadas.
   Recall@10_novel do Matrix Factorization e 5,8x o da Popularidade, mas essa
   margem é menor que o Recall@10 geral sugere. A comparação justa deve citar as
   duas métricas, nunca o Recall@10 geral como headline isolado.
-- Cold start para visitantes e itens novos.
+- **Cold start, por ausência de features de conteúdo.** O modelo é embedding de
+  ID puro: um visitante ou item fora do índice de treino não tem vetor algum, e
+  não há atributos (categoria, preço, texto) a partir dos quais inferir um. Não
+  é um parâmetro mal ajustado — é consequência direta da arquitetura escolhida.
+  Na prática a API degrada para o ranking global de popularidade
+  (`strategy: popularity_fallback`); um item novo só se torna recuperável no
+  ciclo de treino seguinte. Endereçar isso exigiria torres híbridas, com
+  features de conteúdo alimentando as embeddings.
 - Dependência de interações históricas suficientes: visitantes abaixo do limiar
   de 5 interações não são modelados nem avaliados.
 - Sensibilidade à qualidade da amostragem negativa.
