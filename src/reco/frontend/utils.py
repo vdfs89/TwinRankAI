@@ -36,8 +36,8 @@ def inject_custom_css():  # noqa: ANN201
 
 # Resolvido a partir do arquivo, não do cwd: o Streamlit Cloud não garante que
 # o processo rode a partir da raiz do repositório.
-_REPO_ROOT = Path(__file__).resolve().parents[3]
-METRICS_PATH = _REPO_ROOT / "reports" / "metrics.json"
+REPO_ROOT = Path(__file__).resolve().parents[3]
+METRICS_PATH = REPO_ROOT / "reports" / "metrics.json"
 
 MODEL_LABELS = {
     "popularity": "Popularity",

@@ -29,19 +29,23 @@ with col1:
         f"(Embedding Space) de {embedding_dim} dimensões."
     )
 
-    st.markdown("### 2. In-Batch Negative Sampling")
+    st.markdown("### 2. Negative Sampling uniforme")
     st.write(
-        "Para que a rede aprenda a diferenciar itens relevantes dos não relevantes, o TwinRank utiliza a técnica de "  # noqa: E501
-        "**In-Batch Negative Sampling**. Durante o treino, para um dado usuário, todos os outros itens do batch que "  # noqa: E501
-        "não foram interagidos por ele são considerados amostras negativas. Isso otimiza o uso de memória GPU e acelera a convergência."  # noqa: E501
+        "Para a rede aprender a diferenciar itens relevantes dos irrelevantes, "
+        "cada interação positiva é acompanhada de 4 negativos sorteados "
+        "uniformemente do catálogo. O positivo carrega o peso do feedback "
+        "implícito (view 1,0 / addtocart 3,0 / transaction 5,0) numa BCE "
+        "ponderada, de modo que uma compra pesa mais que uma visualização."
     )
 
 with col2:
     st.markdown("### 3. Approximate Nearest Neighbors (FAISS)")
     st.write(
-        "Em tempo de inferência (produção), calcular a similaridade de um usuário contra 1 milhão de itens via *Dot Product* exato seria inviável (latência alta). "  # noqa: E501
-        "Portanto, os embeddings de todos os produtos são cacheados e indexados usando **FAISS** (Facebook AI Similarity Search) via `IndexFlatIP`. "  # noqa: E501
-        "Isso reduz a latência da busca dos Top-K itens de centenas de milissegundos para **menos de 1 milissegundo**."  # noqa: E501
+        "Os embeddings de item são indexados com **FAISS** (Facebook AI "
+        "Similarity Search) via `IndexFlatIP`, evitando varrer o catálogo "
+        "inteiro a cada requisição para encontrar os Top-K por produto interno. "
+        "Medido ponta a ponta no container, um `/recommend` responde em torno "
+        "de **1,6 ms** — a busca vetorial é apenas uma parte desse tempo."
     )
 
     st.markdown("### 4. Cache-Aside Pattern (Redis)")
@@ -52,6 +56,9 @@ with col2:
 
 st.markdown("---")
 st.info(
-    "Essa combinação (Two-Tower + In-Batch Negatives + FAISS + Redis) é o padrão da indústria (usado em YouTube, Pinterest, etc.) "  # noqa: E501
-    "para servir dezenas de milhares de requisições por segundo com altíssima relevância."
+    "A arquitetura Two-Tower com busca vetorial aproximada é o padrão de "
+    "retrieval em recomendação de larga escala, descrito em publicações de "
+    "YouTube e Pinterest. Este projeto implementa esse padrão em escala "
+    "acadêmica: os números de latência acima são de um container local, "
+    "single-worker, não de um teste de carga."
 )

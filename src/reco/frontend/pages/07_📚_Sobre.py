@@ -26,7 +26,7 @@ st.markdown(
     - **Data Engineering**: Processamento de grandes volumes de eventos em Pandas.
     - **Machine Learning**: Construção de Redes Neurais Profundas (Two-Tower) com PyTorch.
     - **MLOps**: Rastreabilidade com MLflow e versionamento de artefatos com DVC.
-    - **Backend & Serving**: Exposição do modelo com FastAPI, busca vetorial sub-milisegundo (FAISS) e cache (Redis).
+    - **Backend & Serving**: Exposição do modelo com FastAPI, busca vetorial com FAISS e cache com Redis.
     - **Frontend**: Criação de Dashboards executivos com Streamlit.
     - **Deploy**: Containerização full-stack com Docker Compose.
     """  # noqa: E501
