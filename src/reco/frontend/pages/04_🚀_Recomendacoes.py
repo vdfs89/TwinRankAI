@@ -1,6 +1,8 @@
 """Pluggable Recommendations Demo for small e-commerce stores with CSV uploads."""
 
 import sys
+import time
+import traceback
 from pathlib import Path
 
 import pandas as pd
@@ -39,11 +41,12 @@ CACHE_KEY = "2026-08-23-relevance-fix"
 @st.cache_resource(show_spinner="Treinando o modelo TwinRank na sua base (Two-Tower + FAISS)...")
 def get_recommender(
     products_csv: object, orders_csv: object, cache_key: str = CACHE_KEY
-) -> tuple[object, pd.DataFrame, pd.DataFrame]:
+) -> tuple[object, pd.DataFrame, pd.DataFrame, float]:
     """Inicializa e treina o modelo de recomendação com os dados carregados."""
     prod_df, ord_df = load_demo_data(products_csv, orders_csv)
+    started = time.perf_counter()
     model = train_demo_model(prod_df, ord_df)
-    return model, prod_df, ord_df
+    return model, prod_df, ord_df, time.perf_counter() - started
 
 
 # Fallback para dados dummy
@@ -56,7 +59,7 @@ if not products_file or not orders_file:
     orders_file = str(BASE_DIR / "dummy_data" / "orders_sample.csv")
 
 try:
-    model, prod_df, ord_df = get_recommender(products_file, orders_file)
+    model, prod_df, ord_df, train_seconds = get_recommender(products_file, orders_file)
     st.sidebar.success("Modelo treinado com sucesso!")
 
     st.sidebar.header("2. Recomendações")
@@ -75,7 +78,7 @@ try:
                 "Tente outro usuário ou use uma amostra maior de dados."
             )
         else:
-            st.success("TwinRank treinado nos seus dados em ~1.5s ⚡")
+            st.success(f"TwinRank treinado nos seus dados em {train_seconds:.1f}s ⚡")
             # Exibir como grid/cards
             cols = st.columns(min(len(recos), 4))
             for idx, item in enumerate(recos):
@@ -88,5 +91,11 @@ try:
             st.markdown("### Tabela Detalhada")
             st.dataframe(pd.DataFrame(recos), use_container_width=True)
 
-except Exception as e:
-    st.error(f"Erro ao processar os dados: {e}")
+except Exception as e:  # noqa: BLE001 - a demo aceita CSV arbitrário do usuário
+    st.error(f"Erro ao processar os dados: {type(e).__name__}: {e}")
+    st.caption(
+        "Confira se `orders.csv` tem as colunas `user_id`, `product_id` e "
+        "`timestamp`, e se cada usuário aparece em pelo menos 2 linhas."
+    )
+    with st.expander("Detalhes técnicos"):
+        st.code("".join(traceback.format_exception(type(e), e, e.__traceback__)))
