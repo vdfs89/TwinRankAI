@@ -130,7 +130,15 @@ class TwoTowerRecommender:
 
         visitor_ids = filtered_events["visitorid"].map(self._visitor_index).to_numpy()
         item_ids = filtered_events["itemid"].map(self._item_index).to_numpy()
-        relevances = filtered_events["relevance"].to_numpy(dtype=np.float32)
+        # `relevance` vem do pré-processamento no pipeline principal. Uma
+        # planilha arbitrária (demo plugável) pode não ter esse conceito: nesse
+        # caso cada interação vale 1,0 e a BCE ponderada degrada para a BCE
+        # comum, em vez de quebrar com KeyError.
+        if "relevance" in filtered_events.columns:
+            relevances = filtered_events["relevance"].to_numpy(dtype=np.float32)
+        else:
+            logger.info("relevance_ausente_assumindo_peso_unitario", eventos=len(filtered_events))
+            relevances = np.ones(len(filtered_events), dtype=np.float32)
 
         dataset = _InteractionDataset(
             visitor_ids=visitor_ids,

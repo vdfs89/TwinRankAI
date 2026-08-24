@@ -12,11 +12,13 @@ import pandas as pd
 import pytest
 
 from reco.demo.ecommerce_demo import (
+    DemoConfig,
     load_demo_data,
     recommend_for_user,
     train_demo_model,
     with_relevance,
 )
+from reco.models.two_tower import TwoTowerRecommender
 
 PRODUCTS = "dummy_data/products_sample.csv"
 ORDERS = "dummy_data/orders_sample.csv"
@@ -69,3 +71,23 @@ def test_demo_treina_e_recomenda_com_ids_alfanumericos(
     for item in recommendations:
         assert item["name"]
         assert isinstance(item["price"], float)
+
+
+def test_fit_aceita_eventos_sem_coluna_relevance() -> None:
+    """`fit` não deve exigir `relevance` de uma planilha arbitrária.
+
+    O pipeline principal sempre cria essa coluna no pré-processamento, mas o
+    demo recebe CSV do usuário. Sem esse fallback, o treino quebra com
+    `KeyError: 'relevance'` — o erro que apareceu em produção.
+    """
+    events = pd.DataFrame(
+        {
+            "visitorid": ["U1", "U1", "U1", "U2", "U2", "U2"],
+            "itemid": ["P1", "P2", "P3", "P2", "P3", "P4"],
+        }
+    )
+
+    model = TwoTowerRecommender(DemoConfig())  # type: ignore[arg-type]
+    model.fit(events)
+
+    assert model.predict_top_k("U1", 2)

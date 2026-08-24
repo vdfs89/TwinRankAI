@@ -30,9 +30,15 @@ products_file = st.sidebar.file_uploader("Upload de products.csv", type=["csv"])
 orders_file = st.sidebar.file_uploader("Upload de orders.csv", type=["csv"])
 
 
+# `cache_key` participa da assinatura só para invalidar caches antigos após uma
+# correção: sem isso, um processo do Streamlit Cloud que já treinou continua
+# devolvendo o resultado (ou o erro) da versão anterior do código.
+CACHE_KEY = "2026-08-23-relevance-fix"
+
+
 @st.cache_resource(show_spinner="Treinando o modelo TwinRank na sua base (Two-Tower + FAISS)...")
 def get_recommender(
-    products_csv: object, orders_csv: object
+    products_csv: object, orders_csv: object, cache_key: str = CACHE_KEY
 ) -> tuple[object, pd.DataFrame, pd.DataFrame]:
     """Inicializa e treina o modelo de recomendação com os dados carregados."""
     prod_df, ord_df = load_demo_data(products_csv, orders_csv)
