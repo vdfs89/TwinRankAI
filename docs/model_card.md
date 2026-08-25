@@ -55,10 +55,27 @@ otimizador atualiza apenas as linhas presentes no batch.
 ### Resultados
 
 Avaliação sobre 2.920 visitantes com pelo menos 5 interações no conjunto de
-treino (`eval_min_train_interactions=5`). Run do Two-Tower rastreado no MLflow
-sob `a9e7c00368df4b93acc655a6493e9b69`, registrado como `twinrank-ai-two-tower`
-v2 em stage Production. Números gerados por `dvc repro` em
+treino (`eval_min_train_interactions=5`). Números gerados por `dvc repro` em
 `reports/metrics.json`.
+
+**Dois runs, resultados idênticos.** O Two-Tower foi treinado duas vezes, em
+momentos diferentes e com o código refatorado entre elas:
+
+| Versão | Run | Stage | Recall@10 |
+|---|---|---|---|
+| v2 | `a9e7c00368df4b93acc655a6493e9b69` | Archived | 0,12311161989031467 |
+| v3 | `6e55cf97abb34251b862369e7c725770` | Production | 0,12311161989031467 |
+
+As 18 métricas (6 por modelo × 3 modelos) saíram idênticas bit a bit nas duas
+execuções, e o `model.joblib` do Two-Tower tem o mesmo md5
+(`96a41ba5d13919414f5782879c871df3`) — apesar de a segunda rodar sobre uma
+versão do `fit` decomposta em cinco métodos. Isso é evidência direta de que o
+determinismo descrito abaixo não depende do arranjo do código, apenas da
+ordem em que o RNG é consumido.
+
+A v3 é a versão em Production porque foi a última promovida; a v2 permanece
+citada por ser o run de referência usado ao longo da documentação. Qualquer
+uma das duas reproduz os números desta seção.
 
 | Modelo | Recall@10 | Precision@10 | MAP@10 | MRR@10 | NDCG@10 |
 |---|---|---|---|---|---|
