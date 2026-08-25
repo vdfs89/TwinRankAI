@@ -45,6 +45,43 @@ def _artifact_path(settings: Settings, model_type: ModelType) -> Path:
     return model_dir / "model.joblib"
 
 
+def _experiment_params(settings: Settings, model_type: ModelType, eval_audit: dict) -> dict:
+    """Hiperparâmetros e auditoria da população, logados como params do run."""
+    return {
+        **eval_audit,
+        "model_type": model_type.value,
+        "embedding_dim": settings.embedding_dim,
+        "learning_rate": settings.learning_rate,
+        "batch_size": settings.batch_size,
+        "negative_samples_per_positive": settings.negative_samples_per_positive,
+        "max_epochs": settings.max_epochs,
+        "early_stopping_patience": settings.early_stopping_patience,
+    }
+
+
+def _persist_and_register(
+    settings: Settings,
+    model_type: ModelType,
+    model: object,
+    run_id: str,
+) -> Path:
+    """Salva o checkpoint, sobe como artefato e registra o two-tower no Registry."""
+    model_path = _artifact_path(settings, model_type)
+    model.save(str(model_path))  # type: ignore[attr-defined]
+    mlflow.log_artifact(str(model_path), artifact_path="model")
+
+    if model_type is ModelType.TWO_TOWER:
+        version = log_and_register_model(
+            settings=settings,
+            run_id=run_id,
+            model_path=model_path,
+            stage=settings.model_stage,
+        )
+        mlflow.log_param("registered_model_version", version)
+
+    return model_path
+
+
 def _run_single_experiment(
     settings: Settings,
     model_type: ModelType,
@@ -55,38 +92,18 @@ def _run_single_experiment(
     model = create_model(model_type, settings)
     # C1: avalia só quem tem histórico de treino suficiente — mesmo critério
     # usado para filtrar a população de treino do two-tower.
-    full_lookup = build_relevance_lookup(test_events)
-    test_lookup, eval_audit = filter_lookup_by_history(full_lookup, train_events)
+    test_lookup, eval_audit = filter_lookup_by_history(
+        build_relevance_lookup(test_events), train_events
+    )
 
     with mlflow.start_run(run_name=model_type.value) as run:
-        mlflow.log_params(
-            {
-                **eval_audit,
-                "model_type": model_type.value,
-                "embedding_dim": settings.embedding_dim,
-                "learning_rate": settings.learning_rate,
-                "batch_size": settings.batch_size,
-                "negative_samples_per_positive": (settings.negative_samples_per_positive),
-                "max_epochs": settings.max_epochs,
-                "early_stopping_patience": settings.early_stopping_patience,
-            }
-        )
+        mlflow.log_params(_experiment_params(settings, model_type, eval_audit))
+
         model.fit(train_events)
         metrics = evaluate_model(model, test_lookup, settings.top_k)
         mlflow.log_metrics(metrics)
 
-        model_path = _artifact_path(settings, model_type)
-        model.save(str(model_path))
-        mlflow.log_artifact(str(model_path), artifact_path="model")
-
-        if model_type is ModelType.TWO_TOWER:
-            version = log_and_register_model(
-                settings=settings,
-                run_id=run.info.run_id,
-                model_path=model_path,
-                stage=settings.model_stage,
-            )
-            mlflow.log_param("registered_model_version", version)
+        model_path = _persist_and_register(settings, model_type, model, run.info.run_id)
 
         logger.info(
             "treino_concluido",
@@ -106,22 +123,14 @@ def run_training_pipeline(  # noqa: D103
     settings: Settings | None = None,
 ) -> list[TrainingRunResult]:
     current_settings = settings or get_settings()
-    preprocess_artifacts: PreprocessArtifacts = run_preprocess(
-        current_settings,
-    )
-    feature_artifacts: FeatureArtifacts = run_feature_engineering(
-        current_settings,
-    )
+    preprocess_artifacts: PreprocessArtifacts = run_preprocess(current_settings)
+    feature_artifacts: FeatureArtifacts = run_feature_engineering(current_settings)
+
     train_events = _load_dataframe(feature_artifacts.train_features_path)
     test_events = _load_dataframe(feature_artifacts.test_features_path)
 
     results = [
-        _run_single_experiment(
-            current_settings,
-            model_type,
-            train_events,
-            test_events,
-        )
+        _run_single_experiment(current_settings, model_type, train_events, test_events)
         for model_type in (
             ModelType.POPULARITY,
             ModelType.MATRIX_FACTORIZATION,

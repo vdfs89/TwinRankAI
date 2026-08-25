@@ -14,6 +14,8 @@ from reco.utils.logging import get_logger
 
 logger = get_logger(__name__)
 
+CACHE_TTL_SECONDS = 3600
+
 
 class RecommendationService:  # noqa: D101
     def __init__(self, settings: Settings) -> None:  # noqa: D107
@@ -51,54 +53,72 @@ class RecommendationService:  # noqa: D101
         model.load(str(fallback_path))
         return model
 
+    def _cache_key(self, user_id: int, top_k: int) -> str:
+        return f"reco:user:{user_id}:k:{top_k}"
+
+    def _read_cache(self, cache_key: str, user_id: int) -> tuple[list[int], str] | None:
+        """Lê a resposta do cache, ignorando entradas em formato antigo."""
+        if not self._redis:
+            return None
+        try:
+            cached = self._redis.get(cache_key)
+        except redis.RedisError as e:
+            logger.warning("redis_read_error", error=str(e))
+            return None
+
+        if not cached:
+            return None
+
+        # Entradas gravadas antes da introdução do campo `strategy` eram uma
+        # lista simples; ignoramos essas para não quebrar com cache quente.
+        payload = json.loads(cached)
+        if not isinstance(payload, dict):
+            logger.info("cache_formato_antigo_descartado", user_id=user_id)
+            return None
+        return payload["item_ids"], payload["strategy"]
+
+    def _write_cache(self, cache_key: str, item_ids: list[int], strategy: str) -> None:
+        """Grava a resposta no cache, ignorando falhas do Redis."""
+        if not self._redis or not item_ids:
+            return
+        try:
+            payload = json.dumps({"item_ids": item_ids, "strategy": strategy})
+            self._redis.setex(cache_key, CACHE_TTL_SECONDS, payload)
+        except redis.RedisError as e:
+            logger.warning("redis_write_error", error=str(e))
+
+    def _rank(self, user_id: int, top_k: int) -> tuple[list[int], str]:
+        """Aplica o two-tower e, se ele não souber o visitante, o fallback.
+
+        `int()` explícito: o two-tower devolve `numpy.int64` (os ids vêm de
+        `unique()` do pandas), que não é serializável por `json.dumps` e
+        derrubava a gravação no cache sempre que o Redis estivesse disponível.
+        """
+        item_ids = [int(item_id) for item_id in self._model.predict_top_k(user_id, top_k)]
+        if item_ids:
+            return item_ids, ModelType.TWO_TOWER.value
+
+        if self._fallback is not None:
+            logger.info("cold_start_fallback", user_id=user_id, top_k=top_k)
+            item_ids = [int(i) for i in self._fallback.predict_top_k(user_id, top_k)]
+            if item_ids:
+                return item_ids, "popularity_fallback"
+
+        return [], "unavailable"
+
     def recommend(self, user_id: int, top_k: int) -> tuple[list[int], str]:
         """Recomenda top-k itens; devolve também a estratégia efetivamente usada."""
-        cache_key = f"reco:user:{user_id}:k:{top_k}"
+        cache_key = self._cache_key(user_id, top_k)
 
-        if self._redis:
-            try:
-                cached = self._redis.get(cache_key)
-                if cached:
-                    payload = json.loads(cached)
-                    # Entradas gravadas antes da introdução do campo `strategy`
-                    # eram uma lista simples; ignoramos essas para não quebrar
-                    # em deploy com cache quente.
-                    if isinstance(payload, dict):
-                        logger.info("cache_hit", user_id=user_id, top_k=top_k)
-                        return payload["item_ids"], payload["strategy"]
-                    logger.info("cache_formato_antigo_descartado", user_id=user_id)
-            except redis.RedisError as e:
-                logger.warning("redis_read_error", error=str(e))
+        cached = self._read_cache(cache_key, user_id)
+        if cached is not None:
+            logger.info("cache_hit", user_id=user_id, top_k=top_k)
+            return cached
 
         logger.info("cache_miss", user_id=user_id, top_k=top_k)
-        # int() explícito: o two-tower devolve numpy.int64 (os ids vêm de
-        # `unique()` do pandas), que não é serializável por `json.dumps` e
-        # derrubava a gravação no cache com TypeError sempre que o Redis
-        # estivesse disponível.
-        recommendations = [int(item_id) for item_id in self._model.predict_top_k(user_id, top_k)]
-        strategy = ModelType.TWO_TOWER.value
-
-        if not recommendations and self._fallback is not None:
-            logger.info("cold_start_fallback", user_id=user_id, top_k=top_k)
-            recommendations = [
-                int(item_id) for item_id in self._fallback.predict_top_k(user_id, top_k)
-            ]
-            strategy = "popularity_fallback"
-
-        if not recommendations:
-            strategy = "unavailable"
-
-        if self._redis and recommendations:
-            try:
-                self._redis.setex(
-                    cache_key,
-                    3600,
-                    json.dumps({"item_ids": recommendations, "strategy": strategy}),
-                )
-            except redis.RedisError as e:
-                logger.warning("redis_write_error", error=str(e))
-
-        return recommendations, strategy
+        item_ids, strategy = self._rank(user_id, top_k)
+        self._write_cache(cache_key, item_ids, strategy)
+        return item_ids, strategy
 
     def predict(
         self,

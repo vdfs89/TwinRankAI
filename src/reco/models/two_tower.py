@@ -98,78 +98,86 @@ class TwoTowerRecommender:
         self._faiss_index = None
         self._device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    def fit(self, train_events: pd.DataFrame) -> None:
-        """Treina o two-tower com BCE ponderada + negative sampling e early stopping."""
-        torch.manual_seed(self._settings.random_seed)
-        np.random.seed(self._settings.random_seed)
+    def _filter_training_population(self, train_events: pd.DataFrame) -> pd.DataFrame:
+        """Mantém só visitantes com histórico mínimo.
 
-        # C5: treina apenas visitantes com histórico mínimo. Um embedding de ID
-        # aprendido a partir de 1 única interação fica praticamente na
-        # inicialização — só infla a matriz de parâmetros e o tempo de treino.
-        # Mesmo critério aplicado na avaliação (reco.training.evaluate).
-        # O corte padrão é MIN_TRAIN_INTERACTIONS (5), o mesmo da avaliação.
-        # Configurações menores — como a do demo plugável, que treina sobre uma
-        # planilha de dezenas de linhas — podem baixá-lo sem afetar o pipeline.
+        C5: um embedding de ID aprendido a partir de 1 única interação fica
+        praticamente na inicialização — infla a matriz de parâmetros e o tempo
+        de treino sem agregar sinal. Mesmo critério da avaliação.
+
+        O corte padrão é `MIN_TRAIN_INTERACTIONS` (5). Configurações menores,
+        como a do demo plugável que treina sobre dezenas de linhas, podem
+        baixá-lo sem afetar o pipeline principal.
+        """
         min_interactions = getattr(self._settings, "min_train_interactions", MIN_TRAIN_INTERACTIONS)
         eligible = eligible_visitors(train_events, min_interactions)
-        filtered_events = train_events[train_events["visitorid"].isin(eligible)]
+        filtered = train_events[train_events["visitorid"].isin(eligible)]
         logger.info(
             "populacao_de_treino_filtrada",
             min_interacoes=min_interactions,
             visitors_antes=int(train_events["visitorid"].nunique()),
-            visitors_depois=int(filtered_events["visitorid"].nunique()),
+            visitors_depois=int(filtered["visitorid"].nunique()),
             eventos_antes=len(train_events),
-            eventos_depois=len(filtered_events),
+            eventos_depois=len(filtered),
         )
+        return filtered
 
-        visitors = filtered_events["visitorid"].unique()
-        items = filtered_events["itemid"].unique()
-        self._visitor_index = {v: i for i, v in enumerate(visitors)}
-        self._item_index = {it: i for i, it in enumerate(items)}
-        self._index_to_item = {i: native_id(it) for it, i in self._item_index.items()}
+    def _relevances(self, events: pd.DataFrame) -> np.ndarray:
+        """Pesos de cada interação para a BCE ponderada.
 
-        visitor_ids = filtered_events["visitorid"].map(self._visitor_index).to_numpy()
-        item_ids = filtered_events["itemid"].map(self._item_index).to_numpy()
-        # `relevance` vem do pré-processamento no pipeline principal. Uma
-        # planilha arbitrária (demo plugável) pode não ter esse conceito: nesse
-        # caso cada interação vale 1,0 e a BCE ponderada degrada para a BCE
-        # comum, em vez de quebrar com KeyError.
-        if "relevance" in filtered_events.columns:
-            relevances = filtered_events["relevance"].to_numpy(dtype=np.float32)
-        else:
-            logger.info("relevance_ausente_assumindo_peso_unitario", eventos=len(filtered_events))
-            relevances = np.ones(len(filtered_events), dtype=np.float32)
+        `relevance` vem do pré-processamento no pipeline principal. Uma planilha
+        arbitrária (demo plugável) pode não ter esse conceito: nesse caso cada
+        interação vale 1,0 e a BCE ponderada degrada para a BCE comum, em vez
+        de quebrar com `KeyError`.
+        """
+        if "relevance" in events.columns:
+            return events["relevance"].to_numpy(dtype=np.float32)
+        logger.info("relevance_ausente_assumindo_peso_unitario", eventos=len(events))
+        return np.ones(len(events), dtype=np.float32)
 
+    def _build_loader(self, events: pd.DataFrame, n_items: int) -> DataLoader:
+        """Monta o dataset de pares positivos/negativos e o DataLoader."""
         dataset = _InteractionDataset(
-            visitor_ids=visitor_ids,
-            item_ids=item_ids,
-            relevances=relevances,
-            n_items=len(items),
+            visitor_ids=events["visitorid"].map(self._visitor_index).to_numpy(),
+            item_ids=events["itemid"].map(self._item_index).to_numpy(),
+            relevances=self._relevances(events),
+            n_items=n_items,
             n_negatives=self._settings.negative_samples_per_positive,
         )
-        loader = DataLoader(
+        workers = self._settings.dataloader_workers
+        return DataLoader(
             dataset,
             batch_size=self._settings.batch_size,
             shuffle=True,
-            num_workers=self._settings.dataloader_workers,
-            persistent_workers=self._settings.dataloader_workers > 0,
+            num_workers=workers,
+            persistent_workers=workers > 0,
         )
 
+    def _build_net(self, n_visitors: int, n_items: int) -> tuple[torch.optim.Optimizer, nn.Module]:
+        """Instancia a rede e devolve o otimizador e a função de perda.
+
+        SparseAdam é o único otimizador Adam-like que aceita gradiente esparso.
+        Não suporta weight_decay nem amsgrad — a regularização aqui vem do
+        negative sampling e do early stopping. A perda usa `reduction="none"`
+        para permitir ponderar cada amostra pela relevância (C3).
+        """
         self._net = _TwoTowerNet(
-            n_visitors=len(visitors),
-            n_items=len(items),
+            n_visitors=n_visitors,
+            n_items=n_items,
             embedding_dim=self._settings.embedding_dim,
         ).to(self._device)
-
-        # SparseAdam: único otimizador Adam-like que aceita gradiente esparso.
-        # Não suporta weight_decay nem amsgrad — a regularização aqui vem do
-        # negative sampling e do early stopping.
         optimizer = torch.optim.SparseAdam(
             list(self._net.parameters()), lr=self._settings.learning_rate
         )
-        # reduction="none" para poder ponderar cada amostra pela relevância (C3).
-        criterion = nn.BCEWithLogitsLoss(reduction="none")
+        return optimizer, nn.BCEWithLogitsLoss(reduction="none")
 
+    def _train_until_early_stop(
+        self,
+        loader: DataLoader,
+        optimizer: torch.optim.Optimizer,
+        criterion: nn.Module,
+    ) -> None:
+        """Roda as épocas, parando quando a loss deixa de melhorar."""
         best_loss = float("inf")
         patience_counter = 0
 
@@ -180,12 +188,31 @@ class TwoTowerRecommender:
             if epoch_loss < best_loss:
                 best_loss = epoch_loss
                 patience_counter = 0
-            else:
-                patience_counter += 1
-                if patience_counter >= self._settings.early_stopping_patience:
-                    logger.info("early_stopping_acionado", epoch=epoch, best_loss=best_loss)
-                    break
+                continue
 
+            patience_counter += 1
+            if patience_counter >= self._settings.early_stopping_patience:
+                logger.info("early_stopping_acionado", epoch=epoch, best_loss=best_loss)
+                break
+
+    def fit(self, train_events: pd.DataFrame) -> None:
+        """Treina o two-tower com BCE ponderada + negative sampling e early stopping."""
+        torch.manual_seed(self._settings.random_seed)
+        np.random.seed(self._settings.random_seed)
+
+        filtered_events = self._filter_training_population(train_events)
+
+        visitors = filtered_events["visitorid"].unique()
+        items = filtered_events["itemid"].unique()
+        self._visitor_index = {v: i for i, v in enumerate(visitors)}
+        self._item_index = {it: i for i, it in enumerate(items)}
+        self._index_to_item = {i: native_id(it) for it, i in self._item_index.items()}
+
+        loader = self._build_loader(filtered_events, n_items=len(items))
+
+        optimizer, criterion = self._build_net(n_visitors=len(visitors), n_items=len(items))
+
+        self._train_until_early_stop(loader, optimizer, criterion)
         self._build_faiss_index()
 
     def _build_faiss_index(self) -> None:
@@ -203,6 +230,25 @@ class TwoTowerRecommender:
         self._faiss_index.add(item_emb)
         logger.info("faiss_index_construido", num_items=self._faiss_index.ntotal)
 
+    def _step(
+        self,
+        batch: tuple[torch.Tensor, ...],
+        optimizer: torch.optim.Optimizer,
+        criterion: torch.nn.Module,
+    ) -> float:
+        """Executa um passo de otimização e devolve a loss do batch."""
+        assert self._net is not None
+        visitors, items, labels, weights = (t.view(-1).to(self._device) for t in batch)
+
+        optimizer.zero_grad()
+        logits = self._net(visitors, items)
+        # C3: média ponderada — uma transaction pesa 5x uma view.
+        per_sample = criterion(logits, labels)
+        loss = (per_sample * weights).sum() / weights.sum()
+        loss.backward()
+        optimizer.step()
+        return loss.item()
+
     def _run_epoch(
         self,
         loader: DataLoader,
@@ -212,24 +258,11 @@ class TwoTowerRecommender:
         """Executa uma época de treino e retorna a loss média."""
         assert self._net is not None
         self._net.train()
+
         total_loss = 0.0
         n_batches = 0
-
-        for visitors_batch, items_batch, labels_batch, weights_batch in loader:
-            visitors_batch = visitors_batch.view(-1).to(self._device)
-            items_batch = items_batch.view(-1).to(self._device)
-            labels_batch = labels_batch.view(-1).to(self._device)
-            weights_batch = weights_batch.view(-1).to(self._device)
-
-            optimizer.zero_grad()
-            logits = self._net(visitors_batch, items_batch)
-            # C3: média ponderada — uma transaction pesa 5x uma view.
-            per_sample = criterion(logits, labels_batch)
-            loss = (per_sample * weights_batch).sum() / weights_batch.sum()
-            loss.backward()
-            optimizer.step()
-
-            total_loss += loss.item()
+        for batch in loader:
+            total_loss += self._step(batch, optimizer, criterion)
             n_batches += 1
 
         return total_loss / max(n_batches, 1)

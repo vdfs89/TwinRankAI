@@ -53,53 +53,53 @@ def add_feature_columns(  # noqa: D103
     return featured
 
 
-def run(settings: Settings) -> FeatureArtifacts:  # noqa: D103
-    train_path = settings.processed_data_dir / "train_events.csv"
-    test_path = settings.processed_data_dir / "test_events.csv"
+def _persist(
+    settings: Settings,
+    train_features: pd.DataFrame,
+    test_features: pd.DataFrame,
+    visitor_mapping: dict,
+    item_mapping: dict,
+) -> FeatureArtifacts:
+    """Grava features e mapeamentos de id, devolvendo os caminhos gerados."""
+    settings.processed_data_dir.mkdir(parents=True, exist_ok=True)
+    artifacts = FeatureArtifacts(
+        train_features_path=settings.processed_data_dir / "train_features.csv",
+        test_features_path=settings.processed_data_dir / "test_features.csv",
+        visitor_mapping_path=settings.processed_data_dir / "visitor_mapping.json",
+        item_mapping_path=settings.processed_data_dir / "item_mapping.json",
+    )
 
-    train_events = _load_events(train_path)
-    test_events = _load_events(test_path)
+    train_features.to_csv(artifacts.train_features_path, index=False)
+    test_features.to_csv(artifacts.test_features_path, index=False)
+    artifacts.visitor_mapping_path.write_text(
+        json.dumps(visitor_mapping, indent=2), encoding="utf-8"
+    )
+    artifacts.item_mapping_path.write_text(json.dumps(item_mapping, indent=2), encoding="utf-8")
+    return artifacts
+
+
+def run(settings: Settings) -> FeatureArtifacts:  # noqa: D103
+    train_events = _load_events(settings.processed_data_dir / "train_events.csv")
+    test_events = _load_events(settings.processed_data_dir / "test_events.csv")
+
+    # Mapeamentos derivados só do treino: ids vistos apenas no teste não podem
+    # influenciar o espaço de embeddings aprendido.
     visitor_mapping, item_mapping = build_id_mappings(train_events)
 
-    train_features = add_feature_columns(
-        train_events,
+    artifacts = _persist(
+        settings,
+        add_feature_columns(train_events, visitor_mapping, item_mapping),
+        add_feature_columns(test_events, visitor_mapping, item_mapping),
         visitor_mapping,
         item_mapping,
-    )
-    test_features = add_feature_columns(
-        test_events,
-        visitor_mapping,
-        item_mapping,
-    )
-
-    settings.processed_data_dir.mkdir(parents=True, exist_ok=True)
-    train_features_path = settings.processed_data_dir / "train_features.csv"
-    test_features_path = settings.processed_data_dir / "test_features.csv"
-    visitor_mapping_path = settings.processed_data_dir / "visitor_mapping.json"
-    item_mapping_path = settings.processed_data_dir / "item_mapping.json"
-
-    train_features.to_csv(train_features_path, index=False)
-    test_features.to_csv(test_features_path, index=False)
-    visitor_mapping_path.write_text(
-        json.dumps(visitor_mapping, indent=2),
-        encoding="utf-8",
-    )
-    item_mapping_path.write_text(
-        json.dumps(item_mapping, indent=2),
-        encoding="utf-8",
     )
 
     logger.info(
         "feature_engineering_concluido",
-        train_features=str(train_features_path),
-        test_features=str(test_features_path),
+        train_features=str(artifacts.train_features_path),
+        test_features=str(artifacts.test_features_path),
     )
-    return FeatureArtifacts(
-        train_features_path=train_features_path,
-        test_features_path=test_features_path,
-        visitor_mapping_path=visitor_mapping_path,
-        item_mapping_path=item_mapping_path,
-    )
+    return artifacts
 
 
 def main() -> int:  # noqa: D103
