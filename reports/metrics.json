@@ -24,7 +24,7 @@
     "recall_at_10_novel": 0.011680372303092962
   },
   "_meta": {
-    "run_id": "a9e7c00368df4b93acc655a6493e9b69",
+    "run_id": "6e55cf97abb34251b862369e7c725770",
     "embedding_dim": 64,
     "top_k": 10,
     "eval_visitors": 2920,

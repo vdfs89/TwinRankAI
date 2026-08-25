@@ -67,31 +67,37 @@ def split_train_test(  # noqa: D103
     return train, test
 
 
-def run(settings: Settings) -> PreprocessArtifacts:  # noqa: D103
-    events = load_events(settings)
-    processed = preprocess_events(events, settings)
-    train, test = split_train_test(processed)
-
+def _write_splits(
+    settings: Settings,
+    processed: pd.DataFrame,
+    train: pd.DataFrame,
+    test: pd.DataFrame,
+) -> PreprocessArtifacts:
+    """Grava o conjunto processado e os splits, devolvendo os caminhos."""
     settings.processed_data_dir.mkdir(parents=True, exist_ok=True)
-    processed_events_path = settings.processed_data_dir / "events_processed.csv"
-    train_path = settings.processed_data_dir / "train_events.csv"
-    test_path = settings.processed_data_dir / "test_events.csv"
+    artifacts = PreprocessArtifacts(
+        processed_events_path=settings.processed_data_dir / "events_processed.csv",
+        train_path=settings.processed_data_dir / "train_events.csv",
+        test_path=settings.processed_data_dir / "test_events.csv",
+    )
+    processed.to_csv(artifacts.processed_events_path, index=False)
+    train.to_csv(artifacts.train_path, index=False)
+    test.to_csv(artifacts.test_path, index=False)
+    return artifacts
 
-    processed.to_csv(processed_events_path, index=False)
-    train.to_csv(train_path, index=False)
-    test.to_csv(test_path, index=False)
+
+def run(settings: Settings) -> PreprocessArtifacts:  # noqa: D103
+    processed = preprocess_events(load_events(settings), settings)
+    train, test = split_train_test(processed)
+    artifacts = _write_splits(settings, processed, train, test)
 
     logger.info(
         "preprocess_concluido",
-        processed_events=str(processed_events_path),
-        train_events=str(train_path),
-        test_events=str(test_path),
+        processed_events=str(artifacts.processed_events_path),
+        train_events=str(artifacts.train_path),
+        test_events=str(artifacts.test_path),
     )
-    return PreprocessArtifacts(
-        train_path=train_path,
-        test_path=test_path,
-        processed_events_path=processed_events_path,
-    )
+    return artifacts
 
 
 def main() -> int:  # noqa: D103
