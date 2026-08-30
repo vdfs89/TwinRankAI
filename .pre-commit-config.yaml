@@ -11,5 +11,8 @@ repos:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-yaml
+        # Os manifests do k8s agrupam Deployment e Service no mesmo arquivo,
+        # separados por `---`. Sem esta flag o hook rejeita o segundo documento.
+        args: [--allow-multiple-documents]
       - id: check-added-large-files
         args: [--maxkb=5000]

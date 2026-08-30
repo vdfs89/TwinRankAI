@@ -1,0 +1,91 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: twinrank-api
+  labels:
+    app.kubernetes.io/name: twinrank-api
+spec:
+  # Réplicas ficam sob controle do HPA (04-hpa.yaml); o valor aqui é só o ponto
+  # de partida do primeiro rollout.
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: twinrank-api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: twinrank-api
+    spec:
+      containers:
+        - name: api
+          image: twinrank-ai:local
+          # A imagem é construída localmente (docker build -t twinrank-ai:local .)
+          # e carregada no cluster; sem registry, Always faria o kubelet tentar
+          # baixar do Docker Hub e falhar com ErrImagePull.
+          imagePullPolicy: IfNotPresent
+          command:
+            - uvicorn
+            - reco.serving.api:app
+            - --host
+            - "0.0.0.0"
+            - --port
+            - "8000"
+          ports:
+            - name: http
+              containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: twinrank-config
+          volumeMounts:
+            - name: models
+              mountPath: /app/models
+              readOnly: true
+          # O checkpoint (~35 MB) e o índice FAISS são carregados no evento de
+          # startup do FastAPI e custam ~7 s. Sem startupProbe, a readiness
+          # falharia durante esse boot e o kubelet reiniciaria o Pod em loop.
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 5
+            failureThreshold: 12
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 20
+          resources:
+            requests:
+              # O HPA escala por utilização de CPU e só funciona com request
+              # de CPU declarado.
+              cpu: 250m
+              # Medido com `kubectl top pods` no cluster kind: 592 Mi por
+              # replica em repouso, logo apos carregar o checkpoint e o indice
+              # FAISS. Um request de 512 Mi ficaria abaixo do consumo real e
+              # convidaria o scheduler a superlotar o no.
+              memory: 768Mi
+            limits:
+              memory: 1536Mi
+      volumes:
+        - name: models
+          persistentVolumeClaim:
+            claimName: twinrank-models
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: twinrank-api
+  labels:
+    app.kubernetes.io/name: twinrank-api
+spec:
+  selector:
+    app.kubernetes.io/name: twinrank-api
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http

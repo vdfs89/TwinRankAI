@@ -1,0 +1,30 @@
+# Pod auxiliar usado só para popular o PVC com os artefatos do modelo.
+# O diretório models/ está no .dockerignore (a imagem não carrega o checkpoint)
+# e o remote do DVC é um caminho local da máquina de treino, então o cluster
+# não consegue fazer `dvc pull`. O caminho suportado é copiar os arquivos:
+#
+#   kubectl apply -f k8s/05-models-loader.yaml
+#   kubectl wait --for=condition=Ready pod/models-loader --timeout=120s
+#   kubectl exec models-loader -- mkdir -p /models/two_tower
+#   kubectl cp models/two_tower/model.joblib      models-loader:/models/two_tower/
+#   kubectl cp models/two_tower/item_index.faiss  models-loader:/models/two_tower/
+#   kubectl delete pod models-loader
+apiVersion: v1
+kind: Pod
+metadata:
+  name: models-loader
+  labels:
+    app.kubernetes.io/name: twinrank-ai
+spec:
+  restartPolicy: Never
+  containers:
+    - name: loader
+      image: busybox:1.36
+      command: ["sh", "-c", "sleep 3600"]
+      volumeMounts:
+        - name: models
+          mountPath: /models
+  volumes:
+    - name: models
+      persistentVolumeClaim:
+        claimName: twinrank-models

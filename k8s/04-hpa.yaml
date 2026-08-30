@@ -1,0 +1,26 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: twinrank-api
+  labels:
+    app.kubernetes.io/name: twinrank-api
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: twinrank-api
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+  behavior:
+    scaleDown:
+      # Cada Pod novo paga ~7 s de carregamento do modelo no startup. Uma
+      # janela curta de estabilização derrubaria réplicas em vales rápidos de
+      # tráfego e pagaria esse custo de novo na próxima subida.
+      stabilizationWindowSeconds: 300

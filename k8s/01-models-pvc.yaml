@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: twinrank-models
+  labels:
+    app.kubernetes.io/name: twinrank-ai
+spec:
+  accessModes:
+    # ReadWriteOnce basta enquanto todas as réplicas da API caem no mesmo nó.
+    # Em cluster multi-nó, troque por ReadWriteMany (NFS/EFS) ou embuta os
+    # artefatos na imagem, senão o segundo Pod não monta o volume.
+    - ReadWriteOnce
+  resources:
+    requests:
+      # model.joblib (~35 MB) + item_index.faiss (~21 MB), com folga para
+      # versões futuras do checkpoint.
+      storage: 1Gi

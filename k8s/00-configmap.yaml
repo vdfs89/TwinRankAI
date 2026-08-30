@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: twinrank-config
+  labels:
+    app.kubernetes.io/name: twinrank-ai
+data:
+  ENV: "production"
+  LOG_LEVEL: "INFO"
+  MODEL_PATH: "/app/models/two_tower/model.joblib"
+  FAISS_INDEX_PATH: "/app/models/two_tower/item_index.faiss"
+  MODEL_STAGE: "Production"
+  REDIS_URL: "redis://redis:6379/0"
+  # File store local: o Pod da API não precisa de servidor MLflow para servir.
+  # Para um tracking server dedicado, troque por http://mlflow:5000.
+  MLFLOW_TRACKING_URI: "file:/app/mlruns"
