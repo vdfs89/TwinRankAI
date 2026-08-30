@@ -86,7 +86,11 @@ try:
                     with st.container(border=True):
                         st.markdown(f"**{item['name']}**")
                         st.caption(f"Categoria: {item['category']}")
-                        st.metric(label="Preço", value=f"R$ {item['price']:.2f}")
+                        # st.metric renderiza o valor em fonte grande e trunca
+                        # com reticencias dentro de uma coluna de 1/4 da tela:
+                        # "R$ 1200.00" virava "R$ 120...", mostrando um preco
+                        # errado. Markdown quebra a linha em vez de cortar.
+                        st.markdown(f"**Preço:** R$ {item['price']:.2f}")
 
             st.markdown("### Tabela Detalhada")
             st.dataframe(pd.DataFrame(recos), use_container_width=True)
