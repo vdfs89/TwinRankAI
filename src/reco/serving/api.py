@@ -74,10 +74,17 @@ def health() -> dict[str, str]:  # noqa: D103
 
 
 @app.get("/model/version")
-def model_version() -> dict[str, str]:  # noqa: D103
+def model_version() -> dict[str, str | bool]:
+    """Identifica o modelo servido e se o checkpoint foi mesmo carregado.
+
+    `model_loaded` existe porque `model_path` sozinho engana: ele reporta o
+    caminho configurado mesmo quando o arquivo nao esta la, e a API continua
+    respondendo `/health` com `ok`.
+    """
     settings = _settings()
     return {
         "model_path": str(settings.model_path),
+        "model_loaded": _service().model_loaded,
         "registered_model_name": settings.mlflow_registered_model_name,
         "stage": settings.model_stage,
     }

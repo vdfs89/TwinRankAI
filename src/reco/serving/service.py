@@ -20,6 +20,7 @@ CACHE_TTL_SECONDS = 3600
 class RecommendationService:  # noqa: D101
     def __init__(self, settings: Settings) -> None:  # noqa: D107
         self._settings = settings
+        self._model_loaded = False
         self._model = create_model(ModelType.TWO_TOWER, settings)
         self._load_model_if_available()
         self._fallback = self._load_fallback_if_available()
@@ -34,9 +35,26 @@ class RecommendationService:  # noqa: D101
             self._redis = None
 
     def _load_model_if_available(self) -> None:
+        """Carrega o checkpoint do two-tower, avisando alto quando ele falta.
+
+        A ausencia do arquivo nao interrompe o boot: o fluxo documentado no
+        README permite subir a API antes do treino e disparar `POST /train`.
+        Mas o silencio custava caro: sem este log, um deploy com o volume vazio
+        respondia `/health` com `ok`, logava `modelo_carregado_no_startup` e
+        devolvia `strategy: "unavailable"` em toda requisicao, sem nenhuma
+        pista de que nao havia modelo nenhum em memoria.
+        """
         model_path = self._settings.model_path
-        if Path(model_path).exists():
-            self._model.load(str(model_path))
+        if not Path(model_path).exists():
+            logger.warning("checkpoint_indisponivel", path=str(model_path))
+            return
+        self._model.load(str(model_path))
+        self._model_loaded = True
+
+    @property
+    def model_loaded(self) -> bool:
+        """Indica se o checkpoint do two-tower esta de fato carregado."""
+        return self._model_loaded
 
     def _load_fallback_if_available(self) -> PopularityRecommender | None:
         """Carrega o baseline de popularidade usado no cold-start.
