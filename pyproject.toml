@@ -8,7 +8,15 @@ packages = [{ include = "reco", from = "src" }]
 
 [tool.poetry.dependencies]
 python = "^3.11"
-torch = "^2.3.0"
+# Wheel de CPU explicito. O wheel default do PyPI arrasta as libs CUDA
+# (~2,7 GB de nvidia/ mais 689 MB de triton) para uma imagem que serve em CPU e
+# usa faiss-cpu. O requirements.txt ja apontava para este indice; sem a fonte
+# declarada aqui, o build Docker (que instala por Poetry) continuava baixando a
+# variante com GPU.
+# Versao exata, nao faixa: Docker, requirements.txt e a maquina de treino
+# precisam do mesmo torch para o resultado ser reproduzivel. Antes deste pin as
+# tres fontes divergiam, e a imagem baixava a variante com CUDA.
+torch = { version = "2.13.0", source = "pytorch-cpu" }
 scikit-learn = "^1.5.0"
 pandas = "^2.2.0"
 numpy = "^1.26.0"
@@ -25,6 +33,11 @@ redis = "^5.0.0"
 streamlit = "^1.36.0"
 requests = "^2.32.0"
 plotly = "^6.9.0"
+[[tool.poetry.source]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+priority = "explicit"
+
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.2.0"
 pytest-cov = "^5.0.0"

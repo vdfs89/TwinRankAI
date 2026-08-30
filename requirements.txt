@@ -8,7 +8,7 @@
 # os scripts de página a cada execução mas mantém os módulos importados em
 # sys.modules: correções dentro de reco.* só entram em vigor após restart.
 --extra-index-url https://download.pytorch.org/whl/cpu
-torch==2.3.0+cpu
+torch==2.13.0+cpu
 scikit-learn>=1.5.0
 pandas>=2.2.0
 numpy>=1.26.0

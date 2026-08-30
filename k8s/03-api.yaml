@@ -64,10 +64,10 @@ spec:
               # O HPA escala por utilização de CPU e só funciona com request
               # de CPU declarado.
               cpu: 250m
-              # Medido com `kubectl top pods` no cluster kind: 592 Mi por
-              # replica em repouso, logo apos carregar o checkpoint e o indice
-              # FAISS. Um request de 512 Mi ficaria abaixo do consumo real e
-              # convidaria o scheduler a superlotar o no.
+              # Medido com `kubectl top pods` no cluster kind: entre 494 e
+              # 555 Mi por replica em repouso, logo apos carregar o checkpoint
+              # e o indice FAISS. Um request de 512 Mi ficaria na fronteira do
+              # consumo real e convidaria o scheduler a superlotar o no.
               memory: 768Mi
             limits:
               memory: 1536Mi
