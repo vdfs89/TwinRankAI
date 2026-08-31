@@ -44,16 +44,23 @@ kubectl exec models-loader -- ls -lR /models
 kubectl delete pod models-loader
 ```
 
-Duas armadilhas nesse passo, ambas verificadas em cluster:
+O comando acima assume Git Bash, Linux ou macOS. Duas armadilhas nesse passo,
+ambas verificadas em cluster:
 
-- **`kubectl cp` falha no Git Bash / Windows.** Ele monta o caminho remoto com
-  o separador do host e o tar do container responde
+- **`kubectl cp` falha no Git Bash.** Ele monta o caminho remoto com o
+  separador do host e o tar do container responde
   `tar: can't change directory to '/models/two_tower'`. O `tar | kubectl exec`
-  acima funciona nos dois sistemas.
+  acima contorna isso. No PowerShell o `kubectl cp` funciona normalmente:
+  `kubectl cp models/two_tower/model.joblib models-loader:/models/two_tower/model.joblib`,
+  um arquivo por vez.
 - **Exporte `MSYS_NO_PATHCONV=1` antes desses comandos no Git Bash.** Sem isso
   o MSYS reescreve `/models` como `C:/Program Files/Git/models` e o tar extrai
   para um caminho inexistente *dentro do container*, sem erro nenhum: o
   `kubectl exec` sai com código 0 e o PVC continua vazio.
+
+No PowerShell, **não** use o `tar | kubectl exec`: o pipeline decodifica o
+fluxo como texto e corrompe os artefatos, com o container respondendo
+`tar: invalid tar magic`. Use o `kubectl cp` arquivo a arquivo.
 
 Confira a saída do `ls -lR` antes de seguir. O `popularity/` é obrigatório: sem
 ele, todo visitante fora da população de treino recebe
