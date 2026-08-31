@@ -41,7 +41,7 @@ spec:
               mountPath: /app/models
               readOnly: true
           # O checkpoint (~35 MB) e o índice FAISS são carregados no evento de
-          # startup do FastAPI e custam ~7 s. Sem startupProbe, a readiness
+          # startup do FastAPI e custam entre 4 e 5 s. Sem startupProbe, a readiness
           # falharia durante esse boot e o kubelet reiniciaria o Pod em loop.
           startupProbe:
             httpGet:

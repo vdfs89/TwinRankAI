@@ -26,6 +26,7 @@ The project combines **Deep Learning, Machine Learning Engineering and MLOps** i
 
 - [Architecture](docs/architecture.md)
 - [Model Card](docs/model_card.md)
+- [Kubernetes deployment](k8s/README.md)
 - [Dataset](#dataset)
 - [Local Setup](#local-setup)
 - [Production Demo](#production-demo)
@@ -103,6 +104,7 @@ TwinRank-AI/
 ├── data/            # raw and processed data (tracked with DVC)
 ├── models/          # saved model artifacts
 ├── docs/            # architecture, model card, etc.
+├── k8s/             # Kubernetes manifests for the serving API
 ├── dvc.yaml
 ├── pyproject.toml
 ├── docker-compose.yml
@@ -140,6 +142,7 @@ This mirrors multi‑stage pipelines in real recommendation systems, where repro
 | Experiment Tracking      | MLflow                        |
 | Data & Pipeline Versioning| DVC                          |
 | Containerization         | Docker, Docker Compose        |
+| Orchestration            | Kubernetes (manifests in `k8s/`) |
 | Dependency Management    | Poetry                        |
 | Quality                  | Pytest, Ruff, pre‑commit      |
 | CI/CD                    | GitHub Actions                |
@@ -167,16 +170,18 @@ python -m uvicorn reco.serving.api:app --reload
 | Route | Method | Description |
 |---|---|---|
 | `/health` | GET | Health check |
-| `/model/version` | GET | Path, registered name and stage of the served model |
+| `/model/version` | GET | Path, registered name, stage and `model_loaded` for the served model |
 | `/recommend/{user_id}` | GET | Top-k recommendations (`top_k` between 1 and 100) |
 | `/predict` | POST | Top-k restricted to a candidate list |
 | `/train` | POST | Kicks off the training pipeline in the background (202) |
 | `/preprocess` | POST | Runs preprocessing |
 | `/feature-eng` | POST | Runs feature engineering |
 
-The model is loaded at application startup (~8 s), not on the first request. Every response carries an `X-Response-Time-ms` header, and latency is recorded in the structured log.
+The model is loaded at application startup (~5 s), not on the first request. Every response carries an `X-Response-Time-ms` header, and latency is recorded in the structured log.
 
 `/recommend` and `/predict` return a `strategy` field indicating how the response was produced: `two_tower` (personalized), `popularity_fallback` (visitor missing from the index — cold start, falls back to the global popularity ranking) or `unavailable` (no model loaded).
+
+A constant `strategy: "unavailable"` means the checkpoint is missing, not that the model failed. The API boots without a checkpoint on purpose, so training can be triggered through `POST /train`, and `/health` still answers `ok` in that state. Confirm through the `model_loaded` field of `/model/version` and the `checkpoint_indisponivel` warning in the startup log.
 
 > **Known limitation — `POST /train`.** The route returns `202 training_started` immediately and runs the pipeline through FastAPI's `BackgroundTasks`, because real training takes ~12.5 min and would block the connection until timeout. `BackgroundTasks` runs in the server process: it does not survive a restart, has no retries, no progress visibility, and competes for CPU with serving. **It is not production-ready without a dedicated job queue** (Celery, RQ, Arq or equivalent). Track progress in MLflow.
 
@@ -198,6 +203,19 @@ Starts `app` (FastAPI on 8000), `mlflow` (5000), `redis` (6379) and
 > ```bash
 > docker compose --profile training run --rm train
 > ```
+
+The image is multi-stage and installs the CPU wheel of PyTorch, declared as an
+explicit source in `pyproject.toml`. The default PyPI wheel bundles the CUDA
+libraries and pushed the image to 9.02 GB; with the CPU wheel it sits at
+2.43 GB, with no GPU involved in serving.
+
+### Kubernetes
+
+The manifests under [`k8s/`](k8s/) run the same API on a cluster, with Redis,
+probes, CPU requests and an HPA scaling from 2 to 6 replicas. They were applied
+and verified on a kind cluster (Kubernetes v1.34). The walkthrough, including
+how to load the checkpoint into the volume, lives in
+[`k8s/README.md`](k8s/README.md).
 
 ### Reproducing the project from scratch
 
@@ -283,8 +301,11 @@ The Two-Tower reaches 36.0x the popularity baseline's Recall@10, 24.7x its NDCG@
 > `poetry run python scripts/memorization_ceiling.py`.
 
 *Results from the reference run tracked in MLflow under run
-`a9e7c00368df4b93acc655a6493e9b69`, registered as `twinrank-ai-two-tower`
-(Production stage), produced by `dvc repro` into `reports/metrics.json`. See the
+`6e55cf97abb34251b862369e7c725770`, registered as `twinrank-ai-two-tower`
+version 3 (Production stage), produced by `dvc repro` into
+`reports/metrics.json`. Version 2 comes from run
+`a9e7c00368df4b93acc655a6493e9b69` and is archived; both produced identical
+numbers, and that match is what serves as determinism evidence. See the
 [Model Card](docs/model_card.md) for details.*
 
 > **TODO — manual sync.** The tables above are generated by `python scripts/export_metrics_for_readme.py`, which only prints markdown to stdout. After any `dvc repro` that changes `reports/metrics.json`, the output must be pasted here and into the [Model Card](docs/model_card.md) by hand, otherwise the numbers drift from the pipeline silently. The Streamlit metrics page already reads the JSON directly and needs no such step.
@@ -343,7 +364,8 @@ It is about understanding the intent behind every interaction.
 - [x] Multi‑stage Docker environment
 - [x] Model Registry promotion flow
 - [x] Recommendation service with FastAPI
-- [x] Production deployment
+- [x] Kubernetes manifests for the API, verified on a local cluster
+- [ ] API deployed behind a public URL
 - [x] GitHub Actions CI
 - [x] FAISS retrieval layer
 - [x] Redis recommendation cache

@@ -12,7 +12,7 @@ Para utilizar o modo plugável, você precisará de duas planilhas em formato `.
 Esta planilha deve conter os metadados dos itens do seu e-commerce.
 
 **Colunas obrigatórias:**
-- `item_id`: Identificador único do produto (texto ou número).
+- `product_id`: Identificador único do produto (texto ou número).
 - `name`: Nome do produto (ex: "Tênis Esportivo").
 - `category`: Categoria ou subcategoria do produto.
 - `price`: Preço do produto.
@@ -21,10 +21,19 @@ Esta planilha deve conter os metadados dos itens do seu e-commerce.
 Esta planilha deve conter os logs de interações dos seus clientes.
 
 **Colunas obrigatórias:**
-- `user_id`: Identificador único do usuário/cliente.
-- `item_id`: Identificador único do produto interagido (deve bater com o `products.csv`).
-- `event_type`: Tipo de interação (ex: "view", "addtocart", "transaction").
+- `user_id`: Identificador único do usuário/cliente. Colunas chamadas
+  `visitorid` são renomeadas automaticamente.
+- `product_id`: Identificador único do produto interagido (deve bater com o `products.csv`).
 - `timestamp`: Momento em que a interação ocorreu (formato ISO 8601 ou epoch).
+
+**Coluna opcional:**
+- `event_type`: Tipo de interação (`view`, `addtocart` ou `transaction`), que
+  aplica os mesmos pesos de relevância do pipeline principal — 1,0, 3,0 e 5,0.
+  Sem essa coluna, cada linha vale 1,0.
+
+> Cada usuário precisa aparecer em pelo menos **2 linhas** de `orders.csv`.
+> Abaixo disso o embedding não sai da inicialização e o usuário fica de fora do
+> treino.
 
 ---
 

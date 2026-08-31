@@ -48,6 +48,16 @@ flowchart TD
 
 - API FastAPI para exposição de recomendações.
 - Separação clara entre treino, avaliação e inferência.
+- Índice FAISS para recuperação por similaridade, em vez de varredura do
+  catálogo a cada requisição.
+- Cache-aside em Redis, com degradação silenciosa quando o Redis está fora.
+- Fallback de popularidade para visitantes ausentes do índice de treino.
+
+### Infra layer
+
+- Dockerfile multi-stage, com o wheel de CPU do PyTorch.
+- `docker-compose.yml` para o ambiente local completo.
+- Manifests Kubernetes em `k8s/`, com HPA por CPU, validados em cluster kind.
 
 ## Padrões de projeto usados
 
@@ -55,7 +65,7 @@ flowchart TD
 - **Strategy**: troca do pré-processamento sem acoplar o pipeline.
 - **Settings centralizadas**: configuração via Pydantic Settings.
 
-## Evolução planejada
+## Camadas já entregues
 
 ```mermaid
 flowchart LR
@@ -65,10 +75,12 @@ flowchart LR
     D --> E[Redis Cache]
     E --> F[Streamlit Dashboard]
     F --> G[GitHub Actions CI]
+    G --> H[Kubernetes Manifests]
 ```
 
 ## Observação
 
-Este documento descreve a narrativa arquitetural desejada para o projeto. As
-próximas entregas devem fechar a camada de MLOps com DVC, Docker e promoção de
-modelo no MLflow Registry.
+A camada de MLOps está fechada: dados versionados com DVC, pipeline de quatro
+stages, imagem Docker multi-stage e modelo promovido a Production no MLflow
+Registry. O que falta para produção de verdade é publicar a API em URL pública
+e substituir o `POST /train` por uma fila de jobs dedicada.

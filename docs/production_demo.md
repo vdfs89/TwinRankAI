@@ -2,10 +2,16 @@
 
 TwinRank AI includes a complete serving ecosystem to demonstrate its capabilities in a production-like environment. The stack features:
 
-- **FastAPI**: Backend service exposing the recommendation endpoint.
+- **FastAPI**: Backend service exposing the recommendation endpoints.
 - **FAISS**: Approximate Nearest Neighbor (ANN) search for lightning-fast item retrieval.
 - **Redis**: Cache-Aside pattern to reduce model load and response latency.
-- **Streamlit**: An interactive dashboard to visualize recommendations.
+- **Streamlit**: An interactive dashboard covering metrics, embeddings and the pluggable demo.
+
+> **The dashboard does not call the API.** The Streamlit pages read
+> `reports/metrics.json` and, on the pluggable demo page, train a small model
+> in-process from uploaded CSVs. To exercise the serving path — FAISS retrieval,
+> the Redis cache and the popularity fallback — talk to the API directly, as
+> described below.
 
 Follow these steps to run the demo locally.
 
@@ -14,37 +20,64 @@ Follow these steps to run the demo locally.
 Make sure you have Docker and Docker Compose installed. From the root of the repository, start the stack:
 
 ```bash
-docker-compose up --build app redis streamlit
+docker compose up --build app redis streamlit
 ```
 
 This command will build the images and spin up the FastAPI backend, the Redis cache, and the Streamlit frontend.
 
-## 2. Access the Dashboard
+## 2. Access the Interfaces
 
-Once the containers are running, open your web browser and navigate to:
+Once the containers are running, open:
 
-[http://localhost:8501](http://localhost:8501)
-
-You will see the TwinRank AI control panel.
+- [http://localhost:8501](http://localhost:8501) — the TwinRank AI dashboard.
+- [http://localhost:8000/docs](http://localhost:8000/docs) — the interactive API documentation.
 
 ## 3. Generate Recommendations
 
-1. In the sidebar, type a **User ID** (e.g., `12345`).
-2. Adjust the **Top K** slider to choose how many recommendations you want.
-3. Click **Generate recommendations**.
+Call the API with any visitor id from the training population:
 
-The dashboard will display the recommended items in an interactive grid. Behind the scenes, the FastAPI backend routes the request to our pre-trained Two-Tower model, using the FAISS index to rapidly retrieve the best matching items.
+```bash
+curl "http://localhost:8000/recommend/172?top_k=5"
+```
+
+The response carries the recommended item ids plus a `strategy` field:
+
+```json
+{"user_id":172,"item_ids":[465522,48030,10034,242905,292240],"strategy":"two_tower"}
+```
+
+`strategy` tells you which path produced the answer. A visitor missing from the
+training index falls back to the global popularity ranking:
+
+```bash
+curl "http://localhost:8000/recommend/1?top_k=5"
+```
+
+```json
+{"user_id":1,"item_ids":[461686,5411,257040,187946,309778],"strategy":"popularity_fallback"}
+```
+
+If every call returns `"strategy":"unavailable"`, the checkpoint is missing
+rather than broken — check `model_loaded` in `http://localhost:8000/model/version`.
 
 ## 4. Verify the Cache (Hit/Miss)
 
-To observe the Cache-Aside pattern in action, check your terminal logs:
+To observe the Cache-Aside pattern in action, repeat the same request and read the logs with `docker compose logs app`:
 
-1. **First request:** The backend queries the FAISS index. You will see a log entry indicating a `cache_miss`. The results are then stored in Redis.
-2. **Subsequent requests:** If you click "Generate recommendations" again for the same User ID and Top K, the backend will retrieve the results instantly from Redis. You will see a `cache_hit` in the terminal logs.
+1. **First request:** the backend queries the FAISS index and logs a `cache_miss`. The result is then stored in Redis.
+2. **Subsequent requests:** the same user id and `top_k` are served straight from Redis, logging a `cache_hit`.
 
 ```text
-[INFO] reco.serving.service: cache_miss user_id=12345 top_k=10
-[INFO] reco.serving.service: cache_hit user_id=12345 top_k=10
+level=INFO logger=reco.serving.service msg=cache_miss user_id=172 top_k=5
+level=INFO logger=reco.serving.service msg=cache_hit user_id=172 top_k=5
 ```
 
+Every response also carries an `X-Response-Time-ms` header with the measured latency.
+
 This demonstrates how TwinRank AI is architected not just for offline metrics, but for real-world, low-latency performance.
+
+## 5. Running on Kubernetes
+
+The same API runs on a cluster through the manifests in [`k8s/`](../k8s/), with
+Redis, health probes and an HPA scaling from 2 to 6 replicas. See
+[`k8s/README.md`](../k8s/README.md) for the walkthrough.

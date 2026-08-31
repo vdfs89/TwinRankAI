@@ -123,6 +123,7 @@ TwinRank-AI/
 ├── data/
 ├── models/
 ├── docs/
+├── k8s/
 ├── dvc.yaml
 ├── pyproject.toml
 ├── docker-compose.yml
@@ -160,6 +161,7 @@ Esse fluxo reflete pipelines em estágios comuns em sistemas reais de recomenda�
 | Tracking de Experimentos | MLflow |
 | Versionamento de Dados e Pipeline | DVC |
 | Containerização | Docker, Docker Compose |
+| Orquestração | Kubernetes (manifests em `k8s/`) |
 | Gerenciamento de Dependências | Poetry |
 | Qualidade | Pytest, Ruff, pre-commit |
 | CI/CD | GitHub Actions |
@@ -199,6 +201,18 @@ Sobe `app` (API FastAPI na porta 8000), `mlflow` (5000), `redis` (6379) e
 > ```bash
 > docker compose --profile training run --rm train
 > ```
+
+A imagem é multi-stage e instala o wheel de CPU do PyTorch, declarado como
+fonte explícita no `pyproject.toml`. O wheel padrão do PyPI traz as bibliotecas
+CUDA junto e levava a imagem a 9,02 GB; com o wheel de CPU ela fica em 2,43 GB,
+sem GPU alguma envolvida no serving.
+
+### Kubernetes
+
+Os manifests em [`k8s/`](k8s/) sobem a mesma API em um cluster, com Redis,
+probes, requests de CPU e um HPA de 2 a 6 réplicas. Foram aplicados e validados
+em um cluster kind (Kubernetes v1.34). O passo a passo, incluindo como carregar
+o checkpoint no volume, está em [`k8s/README.md`](k8s/README.md).
 
 ### Reproduzir o projeto do zero
 
@@ -280,16 +294,18 @@ sequência; o treino domina o tempo total.
 | Rota | Método | Descrição |
 |---|---|---|
 | `/health` | GET | Health check |
-| `/model/version` | GET | Caminho, nome registrado e stage do modelo servido |
+| `/model/version` | GET | Caminho, nome registrado, stage e `model_loaded` do modelo servido |
 | `/recommend/{user_id}` | GET | Top-k recomendações (`top_k` entre 1 e 100) |
 | `/predict` | POST | Top-k restrito a uma lista de candidatos |
 | `/train` | POST | Dispara o pipeline de treino em background (202) |
 | `/preprocess` | POST | Executa o pré-processamento |
 | `/feature-eng` | POST | Executa a engenharia de features |
 
-O modelo é carregado no startup da aplicação (~8 s), não no primeiro request. Cada resposta traz o header `X-Response-Time-ms` e a latência é registrada no log estruturado.
+O modelo é carregado no startup da aplicação (~5 s), não no primeiro request. Cada resposta traz o header `X-Response-Time-ms` e a latência é registrada no log estruturado.
 
 `/recommend` e `/predict` retornam o campo `strategy`, que indica como a resposta foi produzida: `two_tower` (personalizado), `popularity_fallback` (visitante ausente do índice — cold-start, cai no ranking global de popularidade) ou `unavailable` (nenhum modelo carregado).
+
+Um `strategy: "unavailable"` constante indica checkpoint ausente, não falha do modelo. A API sobe sem checkpoint de propósito, para permitir o fluxo de treinar pela própria rota `POST /train`, e nesse caso `/health` responde `ok` normalmente. Confirme pelo campo `model_loaded` de `/model/version` e pelo aviso `checkpoint_indisponivel` no log de startup.
 
 > **Limitação conhecida — `POST /train`.** A rota devolve `202 training_started` imediatamente e executa o pipeline via `BackgroundTasks` do FastAPI, porque o treino real leva ~12,5 min e bloquearia a conexão até o timeout. `BackgroundTasks` roda no mesmo processo do servidor: não sobrevive a restart, não tem retry, não tem visibilidade de progresso e concorre por CPU com o serving. **Não é adequado para produção sem uma fila de jobs dedicada** (Celery, RQ, Arq ou equivalente). Acompanhe o andamento pelo MLflow.
 
@@ -357,9 +373,11 @@ O Two-Tower atinge 36,0x o Recall@10 do baseline de popularidade, 24,7x o NDCG@1
 > `poetry run python scripts/memorization_ceiling.py`.
 
 *Resultados da execução de referência rastreada no MLflow sob o run
-`a9e7c00368df4b93acc655a6493e9b69`, registrado como `twinrank-ai-two-tower`
-(stage Production), gerados por `dvc repro` em `reports/metrics.json`. Veja o
-[Model Card](docs/model_card.md) para detalhes.*
+`6e55cf97abb34251b862369e7c725770`, registrado como `twinrank-ai-two-tower`
+versão 3 (stage Production), gerados por `dvc repro` em `reports/metrics.json`.
+A versão 2 vem do run `a9e7c00368df4b93acc655a6493e9b69` e está arquivada; as
+duas produziram os mesmos números, e é essa coincidência que serve de evidência
+de determinismo. Veja o [Model Card](docs/model_card.md) para detalhes.*
 
 > **TODO — sincronização manual.** As tabelas acima são geradas por `python scripts/export_metrics_for_readme.py`, que apenas imprime o markdown em stdout. Após qualquer `dvc repro` que altere `reports/metrics.json`, é preciso colar a saída aqui e no [Model Card](docs/model_card.md) manualmente, senão os números divergem silenciosamente do pipeline. A página de métricas do Streamlit já lê o JSON direto e não precisa desse passo.
 
@@ -367,7 +385,8 @@ O Two-Tower atinge 36,0x o Recall@10 do baseline de popularidade, 24,7x o NDCG@1
 
 - A documentação e a arquitetura central já estão prontas.
 - Os scaffolds de pré-processamento, feature engineering, treino, avaliação e serving já foram implementados.
-- O trabalho restante é deploy de produção, endurecimento de CI e melhorias de retrieval/cache.
+- O dashboard Streamlit está publicado; a API de serving roda em Docker e em Kubernetes, ambos localmente.
+- O trabalho restante é publicar a API em URL pública, endurecer o CI e melhorar retrieval/cache.
 
 ---
 
@@ -413,6 +432,7 @@ Porque recomendar produtos não é apenas prever o próximo clique. É entender 
 
 - [Arquitetura](docs/architecture.md) — design do sistema, componentes, pipeline e serving.
 - [Model Card](docs/model_card.md) — escopo do modelo, contexto de treino, métricas, limitações, riscos e notas de deploy.
+- [Deploy em Kubernetes](k8s/README.md) — manifests da API, carga do checkpoint no volume e limitações conhecidas.
 
 ---
 
@@ -432,7 +452,8 @@ Porque recomendar produtos não é apenas prever o próximo clique. É entender 
 - [x] Ambiente Docker multi-stage
 - [x] Fluxo de promoção no Model Registry
 - [x] Serviço de recomendação com FastAPI
-- [x] Deploy em produção
+- [x] Manifests Kubernetes da API, validados em cluster local
+- [ ] Deploy da API em URL pública
 - [x] GitHub Actions CI
 - [x] FAISS retrieval layer
 - [x] Redis recommendation cache

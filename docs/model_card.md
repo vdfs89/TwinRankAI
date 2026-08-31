@@ -73,9 +73,10 @@ versão do `fit` decomposta em cinco métodos. Isso é evidência direta de que 
 determinismo descrito abaixo não depende do arranjo do código, apenas da
 ordem em que o RNG é consumido.
 
-A v3 é a versão em Production porque foi a última promovida; a v2 permanece
-citada por ser o run de referência usado ao longo da documentação. Qualquer
-uma das duas reproduz os números desta seção.
+A v3 é a versão em Production porque foi a última promovida, e é o run citado
+como referência no README; a v2 permanece registrada e arquivada como a outra
+metade da evidência de determinismo. Qualquer uma das duas reproduz os números
+desta seção, e é justamente por isso que a escolha entre elas não importa.
 
 | Modelo | Recall@10 | Precision@10 | MAP@10 | MRR@10 | NDCG@10 |
 |---|---|---|---|---|---|
@@ -233,10 +234,19 @@ como default — antes apontava para um servidor que um terceiro não teria no a
 
 - Modelo deve ser promovido no MLflow Registry antes de ser servido.
 - A API expõe `/recommend`, `/predict`, `/health` e `/model/version`; o modelo é
-  carregado no startup (~8 s) para não penalizar o primeiro request.
+  carregado no startup (~5 s) para não penalizar o primeiro request.
 - Latência de cada request é medida por middleware, registrada no log
   estruturado e devolvida no header `X-Response-Time-ms`. Throughput e taxa de
   erro seguem pendentes de instrumentação.
+- `/model/version` devolve `model_loaded`, que distingue "checkpoint carregado"
+  de "arquivo ausente". Sem esse campo, um volume vazio produzia uma API que
+  respondia `/health` com `ok` e devolvia lista vazia em toda recomendação, sem
+  nenhum sinal do que estava errado. O log de startup também avisa com
+  `checkpoint_indisponivel`.
+- Os manifests em `k8s/` servem o modelo com HPA por CPU, de 2 a 6 réplicas.
+  Os artefatos ficam em um PersistentVolumeClaim, e não na imagem: `models/`
+  está no `.dockerignore` e o remote do DVC é um caminho local da máquina de
+  treino, inacessível de dentro de um Pod.
 
 ## Dívida técnica conhecida
 
