@@ -71,8 +71,9 @@ services:
     build: .
     depends_on:
       - app
-    environment:
-      API_URL: http://app:8000
+    # Sem API_URL: nenhuma pagina do dashboard chama a API. As paginas leem
+    # reports/metrics.json e a demo plugavel treina um modelo no proprio
+    # processo. Declarar a variavel sugeria uma integracao que nao existe.
     ports:
       - "8501:8501"
     command:
