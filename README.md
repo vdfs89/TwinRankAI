@@ -8,6 +8,9 @@
 
 **Motor de Recomendação com Deep Learning**
 
+**Vitor Diogo Fonseca da Silva — RM375157**
+Tech Challenge · Fase 2 · Machine Learning Engineering · FIAP
+
 [![PyTorch](https://img.shields.io/badge/PyTorch-EE4C2C?logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![MLflow](https://img.shields.io/badge/MLflow-0194E2?logo=mlflow&logoColor=white)](https://mlflow.org/)

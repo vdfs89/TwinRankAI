@@ -263,4 +263,7 @@ como default — antes apontava para um servidor que um terceiro não teria no a
 
 ## Responsável
 
-Projeto acadêmico para o Tech Challenge da FIAP.
+Vitor Diogo Fonseca da Silva — RM375157.
+
+Projeto acadêmico para o Tech Challenge da Fase 2 (Machine Learning
+Engineering) da FIAP.
