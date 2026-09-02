@@ -4,6 +4,8 @@
 
  🌐 **[Acesse a Live Demo no Streamlit (SaaS)](https://twinrankai.streamlit.app/)**
 
+ 🎥 **[Assista à apresentação do projeto (5 min)](https://youtu.be/YUeemzMXzqA)**
+
  ![Banner](docs/banner_github.png)
 
 **Motor de Recomendação com Deep Learning**
@@ -436,6 +438,7 @@ Porque recomendar produtos não é apenas prever o próximo clique. É entender 
 - [Arquitetura](docs/architecture.md) — design do sistema, componentes, pipeline e serving.
 - [Model Card](docs/model_card.md) — escopo do modelo, contexto de treino, métricas, limitações, riscos e notas de deploy.
 - [Deploy em Kubernetes](k8s/README.md) — manifests da API, carga do checkpoint no volume e limitações conhecidas.
+- [Apresentação em vídeo](https://youtu.be/YUeemzMXzqA) — percurso do projeto em 5 minutos, no formato STAR.
 
 ---
 
