@@ -467,3 +467,9 @@ Porque recomendar produtos não é apenas prever o próximo clique. É entender 
 ## Status do Projeto
 
 O TwinRank AI está evoluindo de uma camada forte de arquitetura e documentação, com perfil de portfólio, para um sistema completo de engenharia de recomendação com DVC, Docker, MLflow Registry e fluxos de treino e serving orientados à produção. O foco atual é fechar a distância entre uma apresentação de alto nível e uma operação verdadeiramente reproduzível.
+
+---
+
+## Licença
+
+Distribuído sob a Licença MIT. O texto completo está em [LICENSE](LICENSE).

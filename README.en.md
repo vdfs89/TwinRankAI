@@ -378,4 +378,4 @@ It is about understanding the intent behind every interaction.
 
 ## License
 
-(Choose the appropriate license, e.g., MIT or Apache 2.0.)
+Released under the MIT License. See [LICENSE](LICENSE) for the full text.

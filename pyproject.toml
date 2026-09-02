@@ -3,6 +3,7 @@ name = "retailrocket-reco"
 version = "0.1.0"
 description = "Sistema de recomendação two-tower para e-commerce (RetailRocket) — Tech Challenge Fase 2"
 authors = ["Vitor Diogo Fonseca da Silva"]
+license = "MIT"
 readme = "README.md"
 packages = [{ include = "reco", from = "src" }]
 
